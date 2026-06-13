@@ -1,0 +1,37 @@
+interface TopbarProps {
+  activeView: 'map' | 'places' | 'favorites';
+  onViewChange: (view: 'map' | 'places' | 'favorites') => void;
+}
+
+export default function Topbar({ activeView, onViewChange }: TopbarProps) {
+  return (
+    <header className="topbar">
+      <div className="topbar-logo">
+        <span className="logo-icon">◈</span>
+        <span className="logo-text">МоскваГид</span>
+        <span className="logo-tagline">— исследуй город умно</span>
+      </div>
+
+      <nav className="topbar-nav">
+        <button
+          className={`nav-btn ${activeView === 'map' ? 'nav-btn--active' : ''}`}
+          onClick={() => onViewChange('map')}
+        >
+          Карта
+        </button>
+        <button
+          className={`nav-btn ${activeView === 'places' ? 'nav-btn--active' : ''}`}
+          onClick={() => onViewChange('places')}
+        >
+          Все места
+        </button>
+        <button
+          className={`nav-btn ${activeView === 'favorites' ? 'nav-btn--active' : ''}`}
+          onClick={() => onViewChange('favorites')}
+        >
+          Избранное
+        </button>
+      </nav>
+    </header>
+  );
+}
