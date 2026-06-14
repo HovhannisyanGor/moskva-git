@@ -4,6 +4,8 @@ import { CATEGORY_LABELS, CATEGORY_COLORS } from '../data/places';
 interface PlaceModalProps {
   place: Place;
   onClose: () => void;
+  isVisited?: boolean;
+  onToggleVisit?: (placeId: number) => void;
 }
 
 const FALLBACK_IMAGES: Record<string, string> = {
@@ -25,7 +27,7 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function PlaceModal({ place, onClose }: PlaceModalProps) {
+export default function PlaceModal({ place, onClose, isVisited, onToggleVisit }: PlaceModalProps) {
   const color = CATEGORY_COLORS[place.category] || '#1D9E75';
   const imgSrc = place.imageUrl || FALLBACK_IMAGES[place.category];
   const hours = Math.floor(place.duration / 60);
@@ -84,6 +86,15 @@ export default function PlaceModal({ place, onClose }: PlaceModalProps) {
               </span>
             ))}
           </div>
+
+          {onToggleVisit && (
+            <button
+              className={`modal-visit-btn ${isVisited ? 'modal-visit-btn--visited' : ''}`}
+              onClick={() => onToggleVisit(place.id)}
+            >
+              {isVisited ? '✓ Я здесь был' : '+ Отметить посещение'}
+            </button>
+          )}
 
           {place.ticketUrl && (
             <a

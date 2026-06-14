@@ -563,3 +563,182 @@ html, body, #root { height: 100%; }
   transition: opacity 0.15s;
 }
 .modal-ticket-btn:hover { opacity: 0.88; }
+
+/* ACHIEVEMENTS */
+.achievements-wrap {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.achievements-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.ach-header {
+  margin-bottom: 32px;
+}
+.ach-header-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.ach-title {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+}
+.ach-count {
+  font-size: 14px;
+  color: var(--text-2);
+}
+.ach-progress-bar {
+  height: 6px;
+  background: var(--bg-3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.ach-progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.ach-progress-label {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.ach-section { margin-bottom: 32px; }
+.ach-section-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.badge-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  transition: all 0.15s;
+  position: relative;
+}
+.badge-card--unlocked {
+  background: var(--green-light);
+  border-color: rgba(29,158,117,0.3);
+}
+.badge-card--locked {
+  background: var(--bg-2);
+  opacity: 0.6;
+}
+.badge-icon { font-size: 28px; flex-shrink: 0; }
+.badge-info { flex: 1; min-width: 0; }
+.badge-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.badge-desc { font-size: 12px; color: var(--text-2); }
+.badge-check {
+  color: var(--green);
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.visited-list { display: flex; flex-direction: column; gap: 6px; }
+.visited-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.visited-item:hover { background: var(--bg-3); }
+.visited-item--unvisited { opacity: 0.7; }
+.visited-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.visited-dot--empty {
+  background: transparent !important;
+  border: 2px solid;
+}
+.visited-info { flex: 1; min-width: 0; }
+.visited-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.visited-meta {
+  font-size: 12px;
+  color: var(--text-3);
+  display: flex;
+  gap: 5px;
+}
+.visited-check { color: var(--green); font-weight: 700; }
+.visited-arrow { color: var(--text-3); font-size: 14px; }
+
+/* VISIT BUTTON IN MODAL */
+.modal-visit-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--green);
+  background: transparent;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.15s;
+}
+.modal-visit-btn:hover { background: var(--green-light); }
+.modal-visit-btn--visited {
+  background: var(--green);
+  color: #fff;
+}
+.modal-visit-btn--visited:hover { background: var(--green-dark); }
+
+/* BADGE TOAST */
+.badge-toast {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  animation: toastIn 0.3s ease;
+  box-shadow: 0 4px 20px rgba(29,158,117,0.4);
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

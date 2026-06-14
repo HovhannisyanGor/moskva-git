@@ -1,6 +1,6 @@
 interface TopbarProps {
-  activeView: 'map' | 'places' | 'favorites';
-  onViewChange: (view: 'map' | 'places' | 'favorites') => void;
+  activeView: 'map' | 'places' | 'achievements';
+  onViewChange: (view: 'map' | 'places' | 'achievements') => void;
 }
 
 export default function Topbar({ activeView, onViewChange }: TopbarProps) {
@@ -26,10 +26,10 @@ export default function Topbar({ activeView, onViewChange }: TopbarProps) {
           Все места
         </button>
         <button
-          className={`nav-btn ${activeView === 'favorites' ? 'nav-btn--active' : ''}`}
-          onClick={() => onViewChange('favorites')}
+          className={`nav-btn ${activeView === 'achievements' ? 'nav-btn--active' : ''}`}
+          onClick={() => onViewChange('achievements')}
         >
-          Избранное
+          🏅 Достижения
         </button>
       </nav>
     </header>

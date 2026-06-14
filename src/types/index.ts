@@ -43,3 +43,23 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
 }
+
+export interface Visit {
+  placeId: number;
+  visitedAt: string; // ISO date
+  note?: string;
+}
+
+export interface Badge {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  condition: (visits: Visit[]) => boolean;
+  category?: PlaceCategory;
+}
+
+export interface AchievementsState {
+  visits: Visit[];
+  unlockedBadges: string[];
+}

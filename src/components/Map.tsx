@@ -8,6 +8,7 @@ interface MapProps {
   places: Place[];
   activeRoute: Route | null;
   onPlaceClick: (place: Place) => void;
+  visitedIds?: number[];
 }
 
 function createMarkerIcon(color: string, isRouteStop: boolean, order?: number) {
@@ -39,7 +40,7 @@ function createMarkerIcon(color: string, isRouteStop: boolean, order?: number) {
   });
 }
 
-export default function Map({ places, activeRoute, onPlaceClick }: MapProps) {
+export default function Map({ places, activeRoute, onPlaceClick, visitedIds = [] }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -113,7 +114,22 @@ export default function Map({ places, activeRoute, onPlaceClick }: MapProps) {
     places.forEach(place => {
       if (routeIds.has(place.id)) return;
       const color = CATEGORY_COLORS[place.category] || '#888';
-      const icon = createMarkerIcon(color, false);
+      const visited = visitedIds.includes(place.id);
+      const icon = visited
+        ? L.divIcon({
+            className: '',
+            html: `<div style="
+              width:18px;height:18px;border-radius:50%;
+              background:${color};
+              border:2.5px solid #fff;
+              box-shadow:0 1px 4px rgba(0,0,0,0.2);
+              display:flex;align-items:center;justify-content:center;
+              font-size:10px;color:#fff;font-weight:700;
+            ">✓</div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+          })
+        : createMarkerIcon(color, false);
       const marker = L.marker(place.coords as L.LatLngExpression, { icon })
         .addTo(mapRef.current!)
         .bindPopup(`
