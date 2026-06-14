@@ -5,12 +5,14 @@ import RouteInfo from './components/RouteInfo';
 import Topbar from './components/Topbar';
 import PlaceModal from './components/PlaceModal';
 import AchievementsPage from './components/AchievementsPage';
+import WelcomePage from './components/WelcomePage';
 import { useAchievements } from './hooks/useAchievements';
 import type { Place, Route } from './types';
 import { PLACES } from './data/places';
 import './App.css';
 
 export default function App() {
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('localee_welcomed'));
   const [activeRoute, setActiveRoute] = useState<Route | null>(null);
   const [activeView, setActiveView] = useState<'map' | 'places' | 'achievements'>('map');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -24,6 +26,11 @@ export default function App() {
     setActiveRoute(route);
   }, []);
 
+  const handleWelcomeDone = useCallback(() => {
+    localStorage.setItem('localee_welcomed', '1');
+    setShowWelcome(false);
+  }, []);
+
   const handleAchievementPlaceClick = useCallback((placeId: number) => {
     const place = PLACES.find(p => p.id === placeId);
     if (place) {
@@ -31,6 +38,10 @@ export default function App() {
       setSelectedPlace(place);
     }
   }, []);
+
+  if (showWelcome) {
+    return <WelcomePage onStart={handleWelcomeDone} />;
+  }
 
   return (
     <div className="app">
