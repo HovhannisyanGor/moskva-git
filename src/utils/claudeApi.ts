@@ -1,7 +1,7 @@
 import type { FilterParams, Place, Route, RouteStop } from '../types';
 import { PLACES } from '../data/places';
 
-const SYSTEM_PROMPT = (places: Place[]) => `Ты — AI-помощник сервиса Routeo. Помогаешь туристам и москвичам исследовать город.
+const SYSTEM_PROMPT = (places: Place[]) => `Ты — AI-помощник сервиса Localee. Помогаешь туристам и москвичам исследовать город.
 
 Твоя задача — составлять персональные маршруты прогулок по Москве на основе предпочтений пользователя.
 

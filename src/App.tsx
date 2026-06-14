@@ -82,7 +82,7 @@ export default function App() {
 
             <div className="map-legend">
               <div className="legend-item">
-                <div className="legend-dot" style={{ background: '#1D9E75' }} />
+                <div className="legend-dot" style={{ background: '#FA3C3C' }} />
                 <span>Достопримечательности</span>
               </div>
               <div className="legend-item">

@@ -67,7 +67,7 @@ export default function Map({ places, activeRoute, onPlaceClick, visitedIds = []
         if (!cancelled) setReady(true);
       })
       .catch((e) => {
-        console.error('[Routeo] Не удалось инициализировать Яндекс.Карты:', e);
+        console.error('[Localee] Не удалось инициализировать Яндекс.Карты:', e);
         setError('load-failed');
       });
 
@@ -98,13 +98,13 @@ export default function Map({ places, activeRoute, onPlaceClick, visitedIds = []
 
       const line = new YMapFeature({
         geometry: { type: 'LineString', coordinates },
-        style: { stroke: [{ color: '#1D9E75', width: 4 }] },
+        style: { stroke: [{ color: '#FA3C3C', width: 4 }] },
       });
       map.addChild(line);
       childrenRef.current.push(line);
 
       sorted.forEach((stop) => {
-        const color = CATEGORY_COLORS[stop.place.category] || '#1D9E75';
+        const color = CATEGORY_COLORS[stop.place.category] || '#FA3C3C';
         const el = buildMarker(
           routeDotHtml(color, stop.order),
           stop.place.name,

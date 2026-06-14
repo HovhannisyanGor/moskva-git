@@ -253,7 +253,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  landmark: '#1D9E75',
+  landmark: '#FA3C3C',
   park: '#378ADD',
   museum: '#D4537E',
   restaurant: '#BA7517',

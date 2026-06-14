@@ -1,36 +1,43 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --green: #1D9E75;
-  --green-dark: #0F6E56;
-  --green-light: #E1F5EE;
+  --accent: #FA3C3C;
+  --accent-dark: #D32330;
   --blue: #378ADD;
   --pink: #D4537E;
   --amber: #BA7517;
-  --bg: #ffffff;
-  --bg-2: #f7f8f6;
-  --bg-3: #f0f2ef;
-  --text: #1a1a18;
-  --text-2: #5a5c58;
-  --text-3: #9a9c98;
-  --border: rgba(0,0,0,0.08);
-  --border-2: rgba(0,0,0,0.14);
   --radius: 10px;
   --radius-sm: 6px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141614;
-    --bg-2: #1e201c;
-    --bg-3: #252720;
-    --text: #edeee9;
-    --text-2: #9a9c96;
-    --text-3: #626460;
-    --border: rgba(255,255,255,0.08);
-    --border-2: rgba(255,255,255,0.14);
-  }
+/* СВЕТЛАЯ ТЕМА — белый + красный */
+:root,
+:root[data-theme='light'] {
+  --accent-soft: #ffe6e6;
+  --bg: #ffffff;
+  --bg-2: #f7f7f9;
+  --bg-3: #eeeef1;
+  --text: #1a1a1c;
+  --text-2: #5a5b62;
+  --text-3: #9a9ba2;
+  --border: rgba(0,0,0,0.08);
+  --border-2: rgba(0,0,0,0.14);
+  --logo-dot: #c41f29;
+}
+
+/* ТЁМНАЯ ТЕМА — красный + тёмный */
+:root[data-theme='dark'] {
+  --accent-soft: rgba(250,60,60,0.18);
+  --bg: #121013;
+  --bg-2: #1c191e;
+  --bg-3: #272329;
+  --text: #f0eef1;
+  --text-2: #a0a0a8;
+  --text-3: #66646c;
+  --border: rgba(255,255,255,0.09);
+  --border-2: rgba(255,255,255,0.16);
+  --logo-dot: #ffffff;
 }
 
 html, body, #root { height: 100%; }
@@ -57,9 +64,10 @@ html, body, #root { height: 100%; }
 }
 
 .topbar-logo { display: flex; align-items: center; gap: 8px; }
-.logo-icon { font-size: 20px; color: var(--green); }
+.logo-icon { font-size: 20px; color: var(--accent); }
 .logo-text { font-size: 16px; font-weight: 500; color: var(--text); }
 .logo-tagline { font-size: 13px; color: var(--text-3); }
+.logo-mark { width: 24px; height: 24px; flex-shrink: 0; }
 
 .topbar-nav { margin-left: auto; display: flex; gap: 2px; }
 .nav-btn {
@@ -74,6 +82,22 @@ html, body, #root { height: 100%; }
 }
 .nav-btn:hover { background: var(--bg-3); color: var(--text); }
 .nav-btn--active { background: var(--bg-3); color: var(--text); font-weight: 500; }
+.theme-toggle {
+  margin-left: 4px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.theme-toggle:hover { background: var(--bg-3); }
 
 /* LAYOUT */
 .layout {
@@ -104,7 +128,7 @@ html, body, #root { height: 100%; }
   font-weight: 500;
   color: var(--text);
 }
-.sidebar-icon { color: var(--green); font-size: 16px; }
+.sidebar-icon { color: var(--accent); font-size: 16px; }
 .sidebar-subtitle { font-size: 12px; color: var(--text-3); margin-top: 4px; }
 
 /* FILTERS */
@@ -135,7 +159,7 @@ html, body, #root { height: 100%; }
   appearance: none;
   cursor: pointer;
 }
-.filter-select:focus { outline: none; border-color: var(--green); }
+.filter-select:focus { outline: none; border-color: var(--accent); }
 
 /* MESSAGES */
 .messages {
@@ -163,7 +187,7 @@ html, body, #root { height: 100%; }
   border-radius: 2px var(--radius) var(--radius) var(--radius);
 }
 .message--user .message-bubble {
-  background: var(--green);
+  background: var(--accent);
   color: #fff;
   border-radius: var(--radius) 2px var(--radius) var(--radius);
   max-width: 88%;
@@ -203,7 +227,7 @@ html, body, #root { height: 100%; }
   font-family: inherit;
   transition: border-color 0.15s;
 }
-.chat-textarea:focus { outline: none; border-color: var(--green); }
+.chat-textarea:focus { outline: none; border-color: var(--accent); }
 .chat-textarea::placeholder { color: var(--text-3); }
 .chat-textarea:disabled { opacity: 0.5; }
 
@@ -229,12 +253,12 @@ html, body, #root { height: 100%; }
   padding: 7px 16px;
   border-radius: var(--radius-sm);
   border: none;
-  background: var(--green);
+  background: var(--accent);
   color: #fff;
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn-send:hover { background: var(--green-dark); }
+.btn-send:hover { background: var(--accent-dark); }
 .btn-send:disabled { background: var(--bg-3); color: var(--text-3); cursor: not-allowed; }
 
 /* MAP */
@@ -352,7 +376,7 @@ html, body, #root { height: 100%; }
   flex-wrap: wrap;
 }
 .route-stop-cat { color: var(--text-2); }
-.free { color: var(--green) !important; }
+.free { color: var(--accent) !important; }
 .route-stop-tip {
   font-size: 12px;
   color: var(--text-2);
@@ -363,7 +387,7 @@ html, body, #root { height: 100%; }
   display: inline-block;
   margin-top: 6px;
   font-size: 12px;
-  color: var(--green);
+  color: var(--accent);
   text-decoration: none;
   font-weight: 500;
 }
@@ -380,8 +404,8 @@ html, body, #root { height: 100%; }
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 20px;
-  background: var(--green-light);
-  color: var(--green-dark);
+  background: var(--accent-soft);
+  color: var(--accent-dark);
 }
 
 /* YANDEX MAP MARKERS */
@@ -669,7 +693,7 @@ html, body, #root { height: 100%; }
 }
 .ach-progress-fill {
   height: 100%;
-  background: var(--green);
+  background: var(--accent);
   border-radius: 3px;
   transition: width 0.4s ease;
 }
@@ -703,8 +727,8 @@ html, body, #root { height: 100%; }
   position: relative;
 }
 .badge-card--unlocked {
-  background: var(--green-light);
-  border-color: rgba(29,158,117,0.3);
+  background: var(--accent-soft);
+  border-color: rgba(250,60,60,0.3);
 }
 .badge-card--locked {
   background: var(--bg-2);
@@ -720,7 +744,7 @@ html, body, #root { height: 100%; }
 }
 .badge-desc { font-size: 12px; color: var(--text-2); }
 .badge-check {
-  color: var(--green);
+  color: var(--accent);
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
@@ -762,7 +786,7 @@ html, body, #root { height: 100%; }
   display: flex;
   gap: 5px;
 }
-.visited-check { color: var(--green); font-weight: 700; }
+.visited-check { color: var(--accent); font-weight: 700; }
 .visited-arrow { color: var(--text-3); font-size: 14px; }
 
 /* VISIT BUTTON IN MODAL */
@@ -771,21 +795,21 @@ html, body, #root { height: 100%; }
   width: 100%;
   padding: 12px;
   border-radius: var(--radius);
-  border: 1.5px solid var(--green);
+  border: 1.5px solid var(--accent);
   background: transparent;
-  color: var(--green);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   margin-bottom: 10px;
   transition: all 0.15s;
 }
-.modal-visit-btn:hover { background: var(--green-light); }
+.modal-visit-btn:hover { background: var(--accent-soft); }
 .modal-visit-btn--visited {
-  background: var(--green);
+  background: var(--accent);
   color: #fff;
 }
-.modal-visit-btn--visited:hover { background: var(--green-dark); }
+.modal-visit-btn--visited:hover { background: var(--accent-dark); }
 
 /* BADGE TOAST */
 .badge-toast {
@@ -793,7 +817,7 @@ html, body, #root { height: 100%; }
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--green);
+  background: var(--accent);
   color: #fff;
   padding: 10px 20px;
   border-radius: 20px;
@@ -801,7 +825,7 @@ html, body, #root { height: 100%; }
   font-weight: 500;
   z-index: 9999;
   animation: toastIn 0.3s ease;
-  box-shadow: 0 4px 20px rgba(29,158,117,0.4);
+  box-shadow: 0 4px 20px rgba(250,60,60,0.4);
 }
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
