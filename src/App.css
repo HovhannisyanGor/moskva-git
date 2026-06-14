@@ -67,7 +67,7 @@ html, body, #root { height: 100%; }
 .logo-icon { font-size: 20px; color: var(--accent); }
 .logo-text { font-size: 16px; font-weight: 500; color: var(--text); }
 .logo-tagline { font-size: 13px; color: var(--text-3); }
-.logo-mark { width: 24px; height: 24px; flex-shrink: 0; }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0; object-fit: cover; }
 
 .topbar-nav { margin-left: auto; display: flex; gap: 2px; }
 .nav-btn {

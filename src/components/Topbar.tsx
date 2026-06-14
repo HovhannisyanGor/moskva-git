@@ -24,19 +24,11 @@ export default function Topbar({ activeView, onViewChange }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar-logo">
-        <svg className="logo-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-          <circle cx="66" cy="63" r="16" stroke="var(--accent)" strokeOpacity="0.5" strokeWidth="3" />
-          <circle cx="66" cy="63" r="23" stroke="var(--accent)" strokeOpacity="0.28" strokeWidth="3" />
-          <path
-            d="M38 28 V63 H62"
-            stroke="var(--accent)"
-            strokeWidth="13"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="38" cy="26" r="12.5" fill="var(--accent)" />
-          <circle cx="66" cy="63" r="11" fill="var(--logo-dot)" />
-        </svg>
+        <img
+          className="logo-mark"
+          src={theme === 'dark' ? '/localee-dark.png' : '/localee-light.png'}
+          alt="Localee"
+        />
         <span className="logo-text">Localee</span>
         <span className="logo-tagline">— исследуй город умно</span>
       </div>
