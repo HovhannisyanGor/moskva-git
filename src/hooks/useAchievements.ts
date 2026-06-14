@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { Visit, AchievementsState } from '../types';
 import { checkNewBadges } from '../data/badges';
 
-const STORAGE_KEY = 'moskva_gid_achievements';
+const STORAGE_KEY = 'routeo_achievements';
 
 function loadState(): AchievementsState {
   try {

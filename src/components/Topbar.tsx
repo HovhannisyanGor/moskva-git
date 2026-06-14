@@ -8,7 +8,7 @@ export default function Topbar({ activeView, onViewChange }: TopbarProps) {
     <header className="topbar">
       <div className="topbar-logo">
         <span className="logo-icon">◈</span>
-        <span className="logo-text">МоскваГид</span>
+        <span className="logo-text">Routeo</span>
         <span className="logo-tagline">— исследуй город умно</span>
       </div>
 

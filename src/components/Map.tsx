@@ -1,8 +1,12 @@
-import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState } from 'react';
 import type { Place, Route } from '../types';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '../data/places';
+import { loadYandexMaps } from '../utils/yandexMaps';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+const API_KEY = import.meta.env.VITE_YANDEX_API_KEY as string | undefined;
+const MOSCOW_CENTER: [number, number] = [37.6173, 55.7558]; // [lng, lat]
 
 interface MapProps {
   places: Place[];
@@ -11,138 +15,148 @@ interface MapProps {
   visitedIds?: number[];
 }
 
-function createMarkerIcon(color: string, isRouteStop: boolean, order?: number) {
-  if (isRouteStop && order !== undefined) {
-    return L.divIcon({
-      className: '',
-      html: `<div style="
-        width:32px;height:32px;border-radius:50%;
-        background:${color};color:#fff;
-        display:flex;align-items:center;justify-content:center;
-        font-size:13px;font-weight:600;font-family:sans-serif;
-        border:2.5px solid #fff;
-        box-shadow:0 2px 8px rgba(0,0,0,0.25);
-      ">${order}</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-    });
-  }
-  return L.divIcon({
-    className: '',
-    html: `<div style="
-      width:14px;height:14px;border-radius:50%;
-      background:${color};
-      border:2px solid #fff;
-      box-shadow:0 1px 4px rgba(0,0,0,0.2);
-    "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
+// Наши координаты хранятся как [lat, lng], Яндексу нужен [lng, lat].
+const toLngLat = (c: [number, number]): [number, number] => [c[1], c[0]];
+
+function buildMarker(dotHtml: string, name: string, categoryLabel: string): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'ymap-marker';
+  el.innerHTML =
+    dotHtml +
+    `<div class="ymap-tip"><strong>${name}</strong><span>${categoryLabel}</span></div>`;
+  return el;
 }
+
+const dotHtml = (color: string) => `<div class="ymap-dot" style="background:${color}"></div>`;
+const visitedDotHtml = (color: string) =>
+  `<div class="ymap-dot ymap-dot--visited" style="background:${color}">✓</div>`;
+const routeDotHtml = (color: string, order: number) =>
+  `<div class="ymap-dot ymap-dot--route" style="background:${color}">${order}</div>`;
 
 export default function Map({ places, activeRoute, onPlaceClick, visitedIds = [] }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const routeLineRef = useRef<L.Polyline | null>(null);
+  const mapRef = useRef<any>(null);
+  const ymapsRef = useRef<any>(null);
+  const childrenRef = useRef<any[]>([]);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<'no-key' | 'load-failed' | null>(null);
 
+  // Инициализация карты (один раз)
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (!API_KEY) {
+      setError('no-key');
+      return;
+    }
+    let cancelled = false;
 
-    mapRef.current = L.map(containerRef.current, {
-      center: [55.7558, 37.6173],
-      zoom: 12,
-      zoomControl: false,
-    });
+    loadYandexMaps(API_KEY)
+      .then(async (ymaps3: any) => {
+        if (cancelled || !containerRef.current || mapRef.current) return;
+        const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapControls } = ymaps3;
+        const { YMapZoomControl } = await ymaps3.import('@yandex/ymaps3-default-ui-theme');
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CARTO',
-      maxZoom: 19,
-    }).addTo(mapRef.current);
+        const map = new YMap(containerRef.current, {
+          location: { center: MOSCOW_CENTER, zoom: 11 },
+        });
+        map.addChild(new YMapDefaultSchemeLayer());
+        map.addChild(new YMapDefaultFeaturesLayer());
+        map.addChild(new YMapControls({ position: 'bottom right' }).addChild(new YMapZoomControl({})));
 
-    L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+        ymapsRef.current = ymaps3;
+        mapRef.current = map;
+        if (!cancelled) setReady(true);
+      })
+      .catch((e) => {
+        console.error('[Routeo] Не удалось инициализировать Яндекс.Карты:', e);
+        setError('load-failed');
+      });
 
     return () => {
-      mapRef.current?.remove();
+      cancelled = true;
+      mapRef.current?.destroy?.();
       mapRef.current = null;
+      ymapsRef.current = null;
     };
   }, []);
 
+  // Маркеры мест и линия маршрута
   useEffect(() => {
-    if (!mapRef.current) return;
+    const ymaps3 = ymapsRef.current;
+    const map = mapRef.current;
+    if (!ready || !ymaps3 || !map) return;
 
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-    routeLineRef.current?.remove();
-    routeLineRef.current = null;
+    const { YMapMarker, YMapFeature } = ymaps3;
 
-    const routeIds = new Set(activeRoute?.stops.map(s => s.place.id) || []);
+    childrenRef.current.forEach((c) => map.removeChild(c));
+    childrenRef.current = [];
+
+    const routeIds = new Set(activeRoute?.stops.map((s) => s.place.id) ?? []);
 
     if (activeRoute && activeRoute.stops.length > 0) {
-      const coords = activeRoute.stops
-        .sort((a, b) => a.order - b.order)
-        .map(s => s.place.coords as L.LatLngExpression);
+      const sorted = [...activeRoute.stops].sort((a, b) => a.order - b.order);
+      const coordinates = sorted.map((s) => toLngLat(s.place.coords));
 
-      routeLineRef.current = L.polyline(coords, {
-        color: '#1D9E75',
-        weight: 3,
-        opacity: 0.8,
-        dashArray: '8, 6',
-      }).addTo(mapRef.current);
+      const line = new YMapFeature({
+        geometry: { type: 'LineString', coordinates },
+        style: { stroke: [{ color: '#1D9E75', width: 4 }] },
+      });
+      map.addChild(line);
+      childrenRef.current.push(line);
 
-      activeRoute.stops.forEach(stop => {
+      sorted.forEach((stop) => {
         const color = CATEGORY_COLORS[stop.place.category] || '#1D9E75';
-        const icon = createMarkerIcon(color, true, stop.order);
-        const marker = L.marker(stop.place.coords as L.LatLngExpression, { icon })
-          .addTo(mapRef.current!)
-          .bindPopup(`
-            <div style="font-family:sans-serif;min-width:180px;">
-              <strong style="font-size:14px;">${stop.place.name}</strong><br>
-              <span style="font-size:12px;color:#666;">${CATEGORY_LABELS[stop.place.category]}</span><br>
-              ${stop.tip ? `<span style="font-size:12px;margin-top:4px;display:block;">💡 ${stop.tip}</span>` : ''}
-              ${stop.place.price > 0 ? `<span style="font-size:12px;color:#BA7517;">~${stop.place.price}₽</span>` : '<span style="font-size:12px;color:#1D9E75;">Бесплатно</span>'}
-            </div>
-          `);
-        marker.on('click', () => onPlaceClick(stop.place));
-        markersRef.current.push(marker);
+        const el = buildMarker(
+          routeDotHtml(color, stop.order),
+          stop.place.name,
+          CATEGORY_LABELS[stop.place.category],
+        );
+        el.addEventListener('click', () => onPlaceClick(stop.place));
+        const marker = new YMapMarker({ coordinates: toLngLat(stop.place.coords) }, el);
+        map.addChild(marker);
+        childrenRef.current.push(marker);
       });
 
-      const bounds = L.latLngBounds(coords);
-      mapRef.current.fitBounds(bounds, { padding: [60, 60] });
+      const lngs = coordinates.map((c) => c[0]);
+      const lats = coordinates.map((c) => c[1]);
+      map.setLocation({
+        bounds: [
+          [Math.min(...lngs), Math.max(...lats)],
+          [Math.max(...lngs), Math.min(...lats)],
+        ],
+        duration: 500,
+      });
     }
 
-    places.forEach(place => {
+    places.forEach((place) => {
       if (routeIds.has(place.id)) return;
       const color = CATEGORY_COLORS[place.category] || '#888';
       const visited = visitedIds.includes(place.id);
-      const icon = visited
-        ? L.divIcon({
-            className: '',
-            html: `<div style="
-              width:18px;height:18px;border-radius:50%;
-              background:${color};
-              border:2.5px solid #fff;
-              box-shadow:0 1px 4px rgba(0,0,0,0.2);
-              display:flex;align-items:center;justify-content:center;
-              font-size:10px;color:#fff;font-weight:700;
-            ">✓</div>`,
-            iconSize: [18, 18],
-            iconAnchor: [9, 9],
-          })
-        : createMarkerIcon(color, false);
-      const marker = L.marker(place.coords as L.LatLngExpression, { icon })
-        .addTo(mapRef.current!)
-        .bindPopup(`
-          <div style="font-family:sans-serif;min-width:160px;">
-            <strong style="font-size:14px;">${place.name}</strong><br>
-            <span style="font-size:12px;color:#666;">${CATEGORY_LABELS[place.category]}</span><br>
-            <span style="font-size:12px;color:#888;">${place.description.slice(0, 60)}...</span>
-          </div>
-        `);
-      marker.on('click', () => onPlaceClick(place));
-      markersRef.current.push(marker);
+      const html = visited ? visitedDotHtml(color) : dotHtml(color);
+      const el = buildMarker(html, place.name, CATEGORY_LABELS[place.category]);
+      el.addEventListener('click', () => onPlaceClick(place));
+      const marker = new YMapMarker({ coordinates: toLngLat(place.coords) }, el);
+      map.addChild(marker);
+      childrenRef.current.push(marker);
     });
-  }, [places, activeRoute, onPlaceClick]);
+  }, [places, activeRoute, onPlaceClick, visitedIds, ready]);
+
+  if (error) {
+    return (
+      <div className="map-fallback">
+        <div className="map-fallback-box">
+          <div className="map-fallback-icon">🗺️</div>
+          <p className="map-fallback-title">
+            {error === 'no-key' ? 'Не задан ключ Яндекс.Карт' : 'Карта недоступна'}
+          </p>
+          <p className="map-fallback-text">
+            {error === 'no-key'
+              ? 'Добавьте ключ VITE_YANDEX_API_KEY в переменные окружения, чтобы отобразить карту.'
+              : 'Не удалось загрузить Яндекс.Карты. Проверьте ключ и подключение к интернету.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }

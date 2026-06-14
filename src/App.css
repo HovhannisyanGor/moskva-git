@@ -384,12 +384,77 @@ html, body, #root { height: 100%; }
   color: var(--green-dark);
 }
 
-/* Leaflet overrides */
-.leaflet-popup-content-wrapper {
-  border-radius: var(--radius) !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+/* YANDEX MAP MARKERS */
+.ymap-marker {
+  position: relative;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
 }
-.leaflet-popup-tip-container { display: none; }
+.ymap-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.ymap-dot--visited {
+  width: 18px;
+  height: 18px;
+  border-width: 2.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
+  font-weight: 700;
+}
+.ymap-dot--route {
+  width: 32px;
+  height: 32px;
+  border-width: 2.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.ymap-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  padding: 7px 11px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s;
+  pointer-events: none;
+  z-index: 500;
+}
+.ymap-marker:hover .ymap-tip { opacity: 1; visibility: visible; }
+.ymap-tip strong { display: block; font-size: 13px; font-weight: 500; color: var(--text); }
+.ymap-tip span { font-size: 11px; color: var(--text-3); }
+
+/* MAP FALLBACK (нет ключа / не загрузилась) */
+.map-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-2);
+  padding: 24px;
+}
+.map-fallback-box { text-align: center; max-width: 320px; }
+.map-fallback-icon { font-size: 40px; margin-bottom: 12px; }
+.map-fallback-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.map-fallback-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
 
 /* MODAL */
 .modal-overlay {
