@@ -408,20 +408,20 @@ html, body, #root { height: 100%; }
   color: var(--accent-dark);
 }
 
-/* YANDEX MAP MARKERS */
-.ymap-marker {
+/* MAP MARKERS (2ГИС) */
+.map-marker {
   position: relative;
   transform: translate(-50%, -50%);
   cursor: pointer;
 }
-.ymap-dot {
+.map-dot {
   width: 14px;
   height: 14px;
   border-radius: 50%;
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,0.25);
 }
-.ymap-dot--visited {
+.map-dot--visited {
   width: 18px;
   height: 18px;
   border-width: 2.5px;
@@ -432,7 +432,7 @@ html, body, #root { height: 100%; }
   color: #fff;
   font-weight: 700;
 }
-.ymap-dot--route {
+.map-dot--route {
   width: 32px;
   height: 32px;
   border-width: 2.5px;
@@ -444,7 +444,7 @@ html, body, #root { height: 100%; }
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
-.ymap-tip {
+.map-tip {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
@@ -461,9 +461,9 @@ html, body, #root { height: 100%; }
   pointer-events: none;
   z-index: 500;
 }
-.ymap-marker:hover .ymap-tip { opacity: 1; visibility: visible; }
-.ymap-tip strong { display: block; font-size: 13px; font-weight: 500; color: var(--text); }
-.ymap-tip span { font-size: 11px; color: var(--text-3); }
+.map-marker:hover .map-tip { opacity: 1; visibility: visible; }
+.map-tip strong { display: block; font-size: 13px; font-weight: 500; color: var(--text); }
+.map-tip span { font-size: 11px; color: var(--text-3); }
 
 /* MAP FALLBACK (нет ключа / не загрузилась) */
 .map-fallback {

@@ -15,7 +15,17 @@
       "Bash(curl -s -w \"  → HTTP %{http_code}\\\\n\" \"https://api-maps.yandex.ru/v3/?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&lang=ru_RU\")",
       "Bash(curl -s -w \"  → HTTP %{http_code}\\\\n\" \"https://api-maps.yandex.ru/v3/?apikey=ace49162-5c15-4e4d-bb7a-d83062523609&lang=ru_RU\")",
       "Skill(claude-api)",
-      "Skill(claude-api:*)"
+      "Skill(claude-api:*)",
+      "WebFetch(domain:yandex.ru)",
+      "Bash(curl -s -w \"  HTTP %{http_code}\\\\n\" \"https://api-maps.yandex.ru/v3/?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&lang=ru_RU\")",
+      "Bash(curl -s -w \"  HTTP %{http_code}\\\\n\" \"https://api.routing.yandex.net/v2/route?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&waypoints=55.7539,37.6208|55.7415,37.6208&mode=walking\")",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" -H \"Referer: http://localhost:5173/\" \"https://api-maps.yandex.ru/v3/?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&lang=ru_RU\")",
+      "Bash(curl -s -o /dev/null -w \"С Referer localhost → HTTP %{http_code}\\\\n\" -H \"Referer: http://localhost:5173/\" \"https://api-maps.yandex.ru/v3/?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&lang=ru_RU\")",
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}\\\\n' -H 'Referer: http://localhost:5173/' 'https://api-maps.yandex.ru/v3/?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&lang=ru_RU')",
+      "Bash(curl -s -w ' | body: ' -o /tmp/y.txt -w 'HTTP %{http_code}\\\\n' -H 'Referer: https://moskva-git.vercel.app/' 'https://api-maps.yandex.ru/v3/?apikey=4de2a1ae-0074-4d9f-bd2f-779dd77d142c&lang=ru_RU')",
+      "Read(//tmp/**)",
+      "WebFetch(domain:docs.2gis.com)",
+      "Bash(npm install *)"
     ]
   }
 }
