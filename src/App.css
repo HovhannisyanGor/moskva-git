@@ -1193,3 +1193,144 @@ html, body, #root { height: 100%; }
 .fr-req-decline { width: 32px; height: 32px; border-radius: 8px; border: 0.5px solid var(--border-2); background: var(--bg); color: var(--text-2); cursor: pointer; font-size: 16px; }
 .fr-find { width: 100%; margin-top: 16px; padding: 12px; border: 0.5px dashed var(--border-2); background: transparent; color: var(--text-2); border-radius: var(--radius); font-size: 13px; cursor: pointer; }
 .fr-find:hover { color: var(--text); border-color: var(--accent); }
+
+/* На десктопе обёртка-шторка прозрачна для грида, ручка и кнопка «назад» скрыты */
+.sheet { display: contents; }
+.sheet-grabber { display: none; }
+.chat-back { display: none; }
+
+/* ============================================================
+   МОБИЛЬНАЯ ВЕРСИЯ (≤768px) — стиль Яндекс.Карт.
+   Класс .app--mobile ставится из JS (matchMedia); десктоп не трогаем.
+   ============================================================ */
+.app--mobile {
+  --mnav-h: 58px;
+  --sheet-peek: 104px;
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---- Карта на весь экран ---- */
+.app--mobile .layout { display: block; position: absolute; inset: 0; }
+.app--mobile .map-container { position: absolute; inset: 0; bottom: var(--mnav-h); }
+.app--mobile .map-legend { display: none; }
+
+/* ---- Нижняя навигация (5 вкладок) ---- */
+.app--mobile .bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: calc(var(--mnav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex; background: var(--bg);
+  border-top: 0.5px solid var(--border);
+  z-index: 1300;
+}
+.bottom-nav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  padding-top: 6px; border: none; background: transparent;
+  color: var(--text-3); font-size: 10px; cursor: pointer;
+  transition: color 0.15s;
+}
+.bottom-nav-btn span { white-space: nowrap; }
+.bottom-nav-btn--active { color: var(--accent); }
+
+/* ---- Нижняя шторка (ИИ-чат + фильтры) ---- */
+.app--mobile .sheet {
+  display: flex; flex-direction: column;
+  position: fixed; left: 0; right: 0; bottom: var(--mnav-h);
+  height: var(--sheet-peek);
+  background: var(--bg);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.16);
+  overflow: hidden; z-index: 1200;
+  transition: height 0.28s cubic-bezier(.4,0,.2,1);
+}
+.app--mobile .sheet--open {
+  height: calc(100vh - var(--mnav-h) - 10px);
+  height: calc(100dvh - var(--mnav-h) - 10px);
+}
+.app--mobile .sheet-grabber {
+  display: flex; align-items: center; justify-content: center;
+  height: 22px; flex-shrink: 0; cursor: grab; touch-action: none;
+}
+.sheet-grabber-bar { width: 40px; height: 4px; border-radius: 2px; background: var(--border-2); }
+.app--mobile .sheet .sidebar { border-right: none; flex: 1; min-height: 0; }
+.app--mobile .sidebar-header { display: none; }
+.app--mobile .chat-input-area { order: -2; border-top: none; padding: 0 16px 10px; }
+.app--mobile .filters { order: -1; }
+.app--mobile .messages { order: 0; }
+.app--mobile .chat-textarea { height: 46px; min-height: 46px; }
+.app--mobile .sheet:not(.sheet--open) .chat-actions,
+.app--mobile .sheet:not(.sheet--open) .filters,
+.app--mobile .sheet:not(.sheet--open) .messages { display: none; }
+
+/* ---- Плавающая кнопка фильтра ---- */
+.app--mobile .fab {
+  position: fixed; z-index: 1250;
+  width: 46px; height: 46px; border: none; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(250,60,60,0.4);
+}
+.app--mobile .fab--filter { right: 14px; bottom: calc(var(--mnav-h) + var(--sheet-peek) + 14px); }
+
+/* ---- Кнопка профиля (переиспользуем ProfileMenu) ---- */
+.app--mobile .mobile-profile-slot {
+  position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 12px; z-index: 1260;
+}
+.app--mobile .mobile-profile-slot .profile-btn {
+  width: 46px; height: 46px; border: none;
+  background: var(--accent); color: #fff;
+  box-shadow: 0 3px 12px rgba(250,60,60,0.4);
+}
+.app--mobile .mobile-profile-slot .profile-btn--active { color: #fff; }
+.app--mobile .mobile-profile-slot .profile-dropdown {
+  position: fixed; top: calc(66px + env(safe-area-inset-top));
+  left: 12px; right: 12px; width: auto;
+  max-height: calc(100dvh - 88px - env(safe-area-inset-top)); overflow-y: auto;
+}
+
+/* ---- Прокручиваемые страницы под навигацией ---- */
+.app--mobile .page-scroll,
+.app--mobile .achievements-wrap {
+  padding-bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom) + 8px);
+}
+.app--mobile .profile-page,
+.app--mobile .edit-page,
+.app--mobile .friends-page {
+  max-width: 100%;
+  padding: calc(18px + env(safe-area-inset-top)) 16px 28px;
+}
+.app--mobile .achievements-page {
+  padding: calc(18px + env(safe-area-inset-top)) 16px 24px;
+}
+.app--mobile .badges-grid { grid-template-columns: 1fr; }
+.app--mobile .pp-badges { grid-template-columns: repeat(3, 1fr); }
+
+/* ---- Чаты: список ↔ переписка ---- */
+.app--mobile .chats-page {
+  position: absolute; inset: 0; bottom: var(--mnav-h);
+}
+.app--mobile .chats-list {
+  width: 100%; border-right: none;
+}
+.app--mobile .chats-list-head { padding-top: calc(16px + env(safe-area-inset-top)); }
+.app--mobile .chat-view { display: none; }
+.app--mobile .chats-page--chat .chats-list { display: none; }
+.app--mobile .chats-page--chat .chat-view { display: flex; }
+.app--mobile .chat-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; margin-left: -6px; flex-shrink: 0;
+  border: none; background: transparent; color: var(--text);
+  font-size: 26px; line-height: 1; cursor: pointer;
+}
+.app--mobile .chat-view-head { padding-top: calc(12px + env(safe-area-inset-top)); }
+
+/* ---- Карточка места и маршрут ---- */
+.app--mobile .modal-overlay { position: fixed; z-index: 2000; padding: 0; align-items: flex-end; }
+.app--mobile .modal { max-width: 100%; width: 100%; max-height: 90vh; border-radius: 18px 18px 0 0; }
+.app--mobile .route-overlay {
+  top: calc(12px + env(safe-area-inset-top)); left: 70px; right: 12px; width: auto; z-index: 1100;
+}
+.app--mobile .route-panel { max-height: 44vh; }

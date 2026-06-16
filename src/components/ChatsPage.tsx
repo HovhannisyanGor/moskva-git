@@ -6,10 +6,16 @@ type ChatTab = 'personal' | 'groups' | 'requests';
 export default function ChatsPage() {
   const [activeId, setActiveId] = useState('kostyan');
   const [tab, setTab] = useState<ChatTab>('personal');
+  const [mobilePane, setMobilePane] = useState<'list' | 'chat'>('list');
   const active = DEMO_CHATS.find((c) => c.id === activeId) ?? DEMO_CHATS[0];
 
+  const openChat = (id: string) => {
+    setActiveId(id);
+    setMobilePane('chat');
+  };
+
   return (
-    <div className="chats-page">
+    <div className={`chats-page ${mobilePane === 'chat' ? 'chats-page--chat' : ''}`}>
       <aside className="chats-list">
         <div className="chats-list-head">
           <span className="chats-title">Сообщения</span>
@@ -38,7 +44,7 @@ export default function ChatsPage() {
               key={c.id}
               type="button"
               className={`chat-item ${c.id === activeId ? 'chat-item--active' : ''}`}
-              onClick={() => setActiveId(c.id)}
+              onClick={() => openChat(c.id)}
             >
               <span className="chat-av" style={{ background: c.color }}>
                 {c.letter}
@@ -59,6 +65,14 @@ export default function ChatsPage() {
 
       <section className="chat-view">
         <header className="chat-view-head">
+          <button
+            className="chat-back"
+            type="button"
+            onClick={() => setMobilePane('list')}
+            aria-label="Назад к чатам"
+          >
+            ‹
+          </button>
           <span className="chat-av chat-av--sm" style={{ background: active.color }}>
             {active.letter}
           </span>
