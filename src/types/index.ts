@@ -63,3 +63,12 @@ export interface AchievementsState {
   visits: Visit[];
   unlockedBadges: string[];
 }
+
+export type View =
+  | 'map'
+  | 'places'
+  | 'achievements'
+  | 'profile'
+  | 'edit-profile'
+  | 'chats'
+  | 'friends';
