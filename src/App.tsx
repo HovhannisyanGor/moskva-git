@@ -62,26 +62,42 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const theme = useTheme();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  // Нижняя шторка как в Яндекс.Картах: точки прилипания 0=свёрнуто, 1=наполовину, 2=полностью
+  const [snap, setSnap] = useState(0);
   const [dragH, setDragH] = useState<number | null>(null);
-  const dragRef = useRef<{ startY: number; startH: number; moved: boolean } | null>(null);
+  const dragRef = useRef<
+    { startY: number; startH: number; lastY: number; lastT: number; vy: number; lastH: number; moved: boolean } | null
+  >(null);
+  const sheetOpen = snap > 0;
 
   const NAV_H = 58;
-  const TOP_GAP = 76; // оставляем место сверху — шторка не доходит до кнопки профиля
+  const TOP_GAP = 76; // полностью раскрытая шторка не доходит до кнопки профиля
   const PEEK_H = 96;
-  const maxOpenH = () => Math.max(220, window.innerHeight - NAV_H - TOP_GAP);
+  const snapPoints = () => {
+    const full = Math.max(240, window.innerHeight - NAV_H - TOP_GAP);
+    const half = Math.min(full - 40, Math.round(window.innerHeight * 0.52));
+    return [PEEK_H, half, full];
+  };
+  const sheetHeight = () => (dragH != null ? dragH : snapPoints()[snap]);
 
   const onGrabberDown = (e: React.PointerEvent) => {
-    const sheetEl = (e.currentTarget as HTMLElement).parentElement as HTMLElement;
-    dragRef.current = { startY: e.clientY, startH: sheetEl.offsetHeight, moved: false };
+    const el = (e.currentTarget as HTMLElement).parentElement as HTMLElement;
+    const h = el.offsetHeight;
+    dragRef.current = { startY: e.clientY, startH: h, lastY: e.clientY, lastT: performance.now(), vy: 0, lastH: h, moved: false };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onGrabberMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d) return;
+    const pts = snapPoints();
     const dy = d.startY - e.clientY;
-    if (Math.abs(dy) > 5) d.moved = true;
-    const h = Math.min(maxOpenH(), Math.max(PEEK_H, d.startH + dy));
+    if (Math.abs(dy) > 4) d.moved = true;
+    const h = Math.min(pts[2], Math.max(pts[0], d.startH + dy));
+    const now = performance.now();
+    d.vy = (e.clientY - d.lastY) / Math.max(1, now - d.lastT); // px/мс, <0 — вверх
+    d.lastY = e.clientY;
+    d.lastT = now;
+    d.lastH = h;
     setDragH(h);
   };
   const onGrabberUp = () => {
@@ -89,11 +105,34 @@ export default function App() {
     dragRef.current = null;
     if (!d) return;
     if (!d.moved) {
-      setSheetOpen((o) => !o);
-    } else if (dragH != null) {
-      const threshold = PEEK_H + (maxOpenH() - PEEK_H) * 0.35;
-      setSheetOpen(dragH > threshold);
+      setSnap((s) => (s === 0 ? 2 : 0));
+      setDragH(null);
+      return;
     }
+    const pts = snapPoints();
+    const h = d.lastH;
+    const FLICK = 0.5;
+    let target: number;
+    if (d.vy < -FLICK) {
+      // быстрый рывок вверх — на следующую точку выше
+      target = pts.findIndex((p) => p > h + 6);
+      if (target === -1) target = pts.length - 1;
+    } else if (d.vy > FLICK) {
+      // быстрый рывок вниз — на следующую точку ниже
+      target = 0;
+      for (let i = pts.length - 1; i >= 0; i--) {
+        if (pts[i] < h - 6) { target = i; break; }
+      }
+    } else {
+      // медленно отпустил — ближайшая точка
+      target = 0;
+      let best = Infinity;
+      pts.forEach((p, i) => {
+        const dd = Math.abs(p - h);
+        if (dd < best) { best = dd; target = i; }
+      });
+    }
+    setSnap(target);
     setDragH(null);
   };
 
@@ -107,7 +146,7 @@ export default function App() {
 
   const navigate = useCallback((v: View) => {
     setActiveView(v);
-    setSheetOpen(false);
+    setSnap(0);
     setDragH(null);
   }, []);
 
@@ -149,7 +188,7 @@ export default function App() {
           <div className="layout">
             <div
               className={`sheet${sheetOpen ? ' sheet--open' : ''}`}
-              style={isMobile && dragH != null ? { height: dragH, transition: 'none' } : undefined}
+              style={isMobile ? { height: sheetHeight(), transition: dragH != null ? 'none' : undefined } : undefined}
             >
               {isMobile && (
                 <div
@@ -165,13 +204,13 @@ export default function App() {
               )}
               {isMobile && !sheetOpen && (
                 <div className="sheet-peek">
-                  <button className="sheet-peek-search" onClick={() => setSheetOpen(true)}>
+                  <button className="sheet-peek-search" onClick={() => setSnap(2)}>
                     <span className="sheet-peek-spark">✦</span>
                     <span>Спросите AI — куда сходить?</span>
                   </button>
                   <button
                     className="sheet-peek-filter"
-                    onClick={() => setSheetOpen(true)}
+                    onClick={() => setSnap(2)}
                     aria-label="Фильтры"
                   >
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
@@ -251,7 +290,7 @@ export default function App() {
           )}
 
           {isMapView && sheetOpen && (
-            <div className="sheet-backdrop" onClick={() => setSheetOpen(false)} />
+            <div className="sheet-backdrop" onClick={() => setSnap(0)} />
           )}
 
           <nav className="bottom-nav">
