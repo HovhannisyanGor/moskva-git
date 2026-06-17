@@ -31,6 +31,8 @@ export function useTheme() {
     const apply = () => {
       const eff = mode === 'auto' ? systemTheme() : mode;
       document.documentElement.setAttribute('data-theme', eff);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', eff === 'dark' ? '#121013' : '#ffffff');
       setEffective(eff);
     };
     apply();
