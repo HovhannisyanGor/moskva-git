@@ -62,37 +62,39 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const theme = useTheme();
-  // Нижняя шторка как в Яндекс.Картах: точки прилипания 0=свёрнуто, 1=наполовину, 2=полностью
+  // Нижняя шторка: 0 = свёрнуто (пик), 1 = полностью раскрыто
   const [snap, setSnap] = useState(0);
   const [dragH, setDragH] = useState<number | null>(null);
   const dragRef = useRef<
-    { startY: number; startH: number; lastY: number; lastT: number; vy: number; lastH: number; moved: boolean } | null
+    { startY: number; startH: number; lastY: number; lastT: number; vy: number; lastH: number; moved: boolean; onGrabber: boolean } | null
   >(null);
   const sheetOpen = snap > 0;
 
   const NAV_H = 58;
   const TOP_GAP = 76; // полностью раскрытая шторка не доходит до кнопки профиля
   const PEEK_H = 96;
-  const snapPoints = () => {
-    const full = Math.max(240, window.innerHeight - NAV_H - TOP_GAP);
-    const half = Math.min(full - 40, Math.round(window.innerHeight * 0.52));
-    return [PEEK_H, half, full];
-  };
-  const sheetHeight = () => (dragH != null ? dragH : snapPoints()[snap]);
+  const snapPoints = () => [PEEK_H, Math.max(240, window.innerHeight - NAV_H - TOP_GAP)];
+  // высота шторки фиксированная (полная), показываем через сдвиг translateY
+  const visibleH = () => (dragH != null ? dragH : snapPoints()[snap]);
+  const sheetTranslateY = () => snapPoints()[1] - visibleH();
 
-  const onGrabberDown = (e: React.PointerEvent) => {
-    const el = (e.currentTarget as HTMLElement).parentElement as HTMLElement;
-    const h = el.offsetHeight;
-    dragRef.current = { startY: e.clientY, startH: h, lastY: e.clientY, lastT: performance.now(), vy: 0, lastH: h, moved: false };
+  // Тянуть можно за любую точку шторки, кроме самих полей/кнопок
+  const onSheetDown = (e: React.PointerEvent) => {
+    if (!isMobile) return;
+    const t = e.target as HTMLElement;
+    const onGrabber = !!t.closest('.sheet-grabber');
+    if (!onGrabber && t.closest('input, select, textarea, button, a')) return;
+    const h = visibleH();
+    dragRef.current = { startY: e.clientY, startH: h, lastY: e.clientY, lastT: performance.now(), vy: 0, lastH: h, moved: false, onGrabber };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
-  const onGrabberMove = (e: React.PointerEvent) => {
+  const onSheetMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d) return;
     const pts = snapPoints();
     const dy = d.startY - e.clientY;
     if (Math.abs(dy) > 4) d.moved = true;
-    const h = Math.min(pts[2], Math.max(pts[0], d.startH + dy));
+    const h = Math.min(pts[1], Math.max(pts[0], d.startH + dy));
     const now = performance.now();
     d.vy = (e.clientY - d.lastY) / Math.max(1, now - d.lastT); // px/мс, <0 — вверх
     d.lastY = e.clientY;
@@ -100,12 +102,12 @@ export default function App() {
     d.lastH = h;
     setDragH(h);
   };
-  const onGrabberUp = () => {
+  const onSheetUp = () => {
     const d = dragRef.current;
     dragRef.current = null;
     if (!d) return;
     if (!d.moved) {
-      setSnap((s) => (s === 0 ? 2 : 0));
+      if (d.onGrabber) setSnap((s) => (s === 0 ? 1 : 0)); // тап по язычку — открыть/свернуть
       setDragH(null);
       return;
     }
@@ -113,25 +115,9 @@ export default function App() {
     const h = d.lastH;
     const FLICK = 0.5;
     let target: number;
-    if (d.vy < -FLICK) {
-      // быстрый рывок вверх — на следующую точку выше
-      target = pts.findIndex((p) => p > h + 6);
-      if (target === -1) target = pts.length - 1;
-    } else if (d.vy > FLICK) {
-      // быстрый рывок вниз — на следующую точку ниже
-      target = 0;
-      for (let i = pts.length - 1; i >= 0; i--) {
-        if (pts[i] < h - 6) { target = i; break; }
-      }
-    } else {
-      // медленно отпустил — ближайшая точка
-      target = 0;
-      let best = Infinity;
-      pts.forEach((p, i) => {
-        const dd = Math.abs(p - h);
-        if (dd < best) { best = dd; target = i; }
-      });
-    }
+    if (d.vy < -FLICK) target = 1; // флик вверх — полностью
+    else if (d.vy > FLICK) target = 0; // флик вниз — свернуть
+    else target = Math.abs(pts[0] - h) <= Math.abs(pts[1] - h) ? 0 : 1; // ближайшая
     setSnap(target);
     setDragH(null);
   };
@@ -188,29 +174,25 @@ export default function App() {
           <div className="layout">
             <div
               className={`sheet${sheetOpen ? ' sheet--open' : ''}`}
-              style={isMobile ? { height: sheetHeight(), transition: dragH != null ? 'none' : undefined } : undefined}
+              style={isMobile ? { transform: `translateY(${sheetTranslateY()}px)`, transition: dragH != null ? 'none' : undefined } : undefined}
+              onPointerDown={isMobile ? onSheetDown : undefined}
+              onPointerMove={isMobile ? onSheetMove : undefined}
+              onPointerUp={isMobile ? onSheetUp : undefined}
             >
               {isMobile && (
-                <div
-                  className="sheet-grabber"
-                  onPointerDown={onGrabberDown}
-                  onPointerMove={onGrabberMove}
-                  onPointerUp={onGrabberUp}
-                  role="button"
-                  aria-label={sheetOpen ? 'Свернуть' : 'Развернуть'}
-                >
+                <div className="sheet-grabber" role="button" aria-label={sheetOpen ? 'Свернуть' : 'Развернуть'}>
                   <span className="sheet-grabber-bar" />
                 </div>
               )}
               {isMobile && !sheetOpen && (
                 <div className="sheet-peek">
-                  <button className="sheet-peek-search" onClick={() => setSnap(2)}>
+                  <button className="sheet-peek-search" onClick={() => setSnap(1)}>
                     <span className="sheet-peek-spark">✦</span>
                     <span>Спросите AI — куда сходить?</span>
                   </button>
                   <button
                     className="sheet-peek-filter"
-                    onClick={() => setSnap(2)}
+                    onClick={() => setSnap(1)}
                     aria-label="Фильтры"
                   >
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">

@@ -1251,16 +1251,15 @@ html, body { background: var(--bg); }
 .app--mobile .sheet {
   display: flex; flex-direction: column;
   position: fixed; left: 0; right: 0; bottom: var(--mnav-h);
-  height: var(--sheet-peek);
+  height: calc(100vh - var(--mnav-h) - 76px);
+  height: calc(100dvh - var(--mnav-h) - 76px);
   background: var(--bg);
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -6px 28px rgba(0,0,0,0.18);
   overflow: hidden; z-index: 1200;
-  transition: height 0.34s cubic-bezier(.32,.72,0,1);
-}
-.app--mobile .sheet--open {
-  height: calc(100vh - var(--mnav-h) - 76px);
-  height: calc(100dvh - var(--mnav-h) - 76px);
+  transition: transform 0.34s cubic-bezier(.32,.72,0,1);
+  will-change: transform;
+  touch-action: none;
 }
 .app--mobile .sheet-grabber {
   display: flex; align-items: center; justify-content: center;
