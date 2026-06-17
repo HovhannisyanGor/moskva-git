@@ -18,6 +18,7 @@ const CITIES = ['Москва', 'Санкт-Петербург', 'Казань',
 
 export default function EditProfilePage({ onBack }: EditProfilePageProps) {
   const u = DEMO_USER;
+  const [showMore, setShowMore] = useState(false);
   const [avatar, setAvatar] = useState(u.letter);
   const [avatarColor, setAvatarColor] = useState(u.color);
   const [name, setName] = useState(u.name);
@@ -63,22 +64,32 @@ export default function EditProfilePage({ onBack }: EditProfilePageProps) {
                 {a.letter}
               </button>
             ))}
+            <button
+              type="button"
+              className={`ep-av ep-av--more ${showMore ? 'ep-av--active' : ''}`}
+              onClick={() => setShowMore((s) => !s)}
+              aria-label={showMore ? 'Скрыть варианты' : 'Больше вариантов'}
+            >
+              {showMore ? '×' : '+'}
+            </button>
           </div>
-          <div className="ep-av-line">
-            {AV_EMOJI.map((e) => (
-              <button
-                key={e}
-                type="button"
-                className={`ep-av ep-av--emoji ${avatar === e ? 'ep-av--active' : ''}`}
-                onClick={() => {
-                  setAvatar(e);
-                  setAvatarColor('var(--bg-3)');
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
+          {showMore && (
+            <div className="ep-av-line ep-av-line--more">
+              {AV_EMOJI.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  className={`ep-av ep-av--emoji ${avatar === e ? 'ep-av--active' : ''}`}
+                  onClick={() => {
+                    setAvatar(e);
+                    setAvatarColor('var(--bg-3)');
+                  }}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <label className="ep-field">

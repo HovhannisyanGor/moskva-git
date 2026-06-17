@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Place } from '../types';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '../data/places';
 
@@ -28,6 +29,11 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function PlaceModal({ place, onClose, isVisited, onToggleVisit }: PlaceModalProps) {
+  const [closing, setClosing] = useState(false);
+  const close = () => {
+    setClosing(true);
+    setTimeout(onClose, 230);
+  };
   const color = CATEGORY_COLORS[place.category] || '#1D9E75';
   const imgSrc = place.imageUrl || FALLBACK_IMAGES[place.category];
   const hours = Math.floor(place.duration / 60);
@@ -35,8 +41,8 @@ export default function PlaceModal({ place, onClose, isVisited, onToggleVisit }:
   const timeStr = hours > 0 ? `${hours} ч${mins > 0 ? ` ${mins} мин` : ''}` : `${mins} мин`;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className={`modal-overlay${closing ? ' modal-overlay--closing' : ''}`} onClick={close}>
+      <div className={`modal${closing ? ' modal--closing' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="modal-image-wrap">
           <img
             src={imgSrc}
@@ -44,7 +50,7 @@ export default function PlaceModal({ place, onClose, isVisited, onToggleVisit }:
             className="modal-image"
             onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGES[place.category]; }}
           />
-          <button className="modal-close" onClick={onClose} aria-label="Закрыть">✕</button>
+          <button className="modal-close" onClick={close} aria-label="Закрыть">✕</button>
           <div className="modal-category-badge" style={{ background: color }}>
             {CATEGORY_LABELS[place.category]}
           </div>

@@ -687,6 +687,10 @@ html, body, #root { height: 100%; }
   from { opacity: 0; transform: scale(0.95) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
+.modal-overlay--closing { animation: ovClose 0.2s ease forwards; }
+.modal--closing { animation: modalOut 0.2s ease forwards; }
+@keyframes ovClose { to { opacity: 0; } }
+@keyframes modalOut { to { opacity: 0; transform: scale(0.96) translateY(8px); } }
 
 .modal-image-wrap {
   position: relative;
@@ -1098,6 +1102,13 @@ html, body, #root { height: 100%; }
   font-size: 18px; font-weight: 600; color: #fff; cursor: pointer;
 }
 .ep-av--emoji { background: var(--bg-3); }
+.ep-av--more {
+  background: transparent;
+  border: 2px dashed var(--border-2);
+  color: var(--text-2);
+  font-size: 24px; font-weight: 400;
+}
+.ep-av--more:hover { border-color: var(--accent); color: var(--accent); }
 .ep-av--active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
 .ep-field { display: block; margin-bottom: 16px; }
 .ep-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 7px; }
@@ -1205,7 +1216,7 @@ html, body, #root { height: 100%; }
    ============================================================ */
 .app--mobile {
   --mnav-h: 58px;
-  --sheet-peek: 104px;
+  --sheet-peek: 96px;
   position: relative;
   height: 100vh;
   height: 100dvh;
@@ -1241,39 +1252,54 @@ html, body, #root { height: 100%; }
   position: fixed; left: 0; right: 0; bottom: var(--mnav-h);
   height: var(--sheet-peek);
   background: var(--bg);
-  border-radius: 18px 18px 0 0;
-  box-shadow: 0 -6px 24px rgba(0,0,0,0.16);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -6px 28px rgba(0,0,0,0.18);
   overflow: hidden; z-index: 1200;
-  transition: height 0.28s cubic-bezier(.4,0,.2,1);
+  transition: height 0.34s cubic-bezier(.32,.72,0,1);
 }
 .app--mobile .sheet--open {
-  height: calc(100vh - var(--mnav-h) - 10px);
-  height: calc(100dvh - var(--mnav-h) - 10px);
+  height: calc(100vh - var(--mnav-h) - 76px);
+  height: calc(100dvh - var(--mnav-h) - 76px);
 }
 .app--mobile .sheet-grabber {
   display: flex; align-items: center; justify-content: center;
-  height: 22px; flex-shrink: 0; cursor: grab; touch-action: none;
+  height: 26px; flex-shrink: 0; cursor: grab; touch-action: none;
 }
-.sheet-grabber-bar { width: 40px; height: 4px; border-radius: 2px; background: var(--border-2); }
-.app--mobile .sheet .sidebar { border-right: none; flex: 1; min-height: 0; }
-.app--mobile .sidebar-header { display: none; }
-.app--mobile .chat-input-area { order: -2; border-top: none; padding: 0 16px 10px; }
-.app--mobile .filters { order: -1; }
-.app--mobile .messages { order: 0; }
-.app--mobile .chat-textarea { height: 46px; min-height: 46px; }
-.app--mobile .sheet:not(.sheet--open) .chat-actions,
-.app--mobile .sheet:not(.sheet--open) .filters,
-.app--mobile .sheet:not(.sheet--open) .messages { display: none; }
+.app--mobile .sheet-grabber:active { cursor: grabbing; }
+.sheet-grabber-bar { width: 40px; height: 5px; border-radius: 3px; background: var(--border-2); }
 
-/* ---- Плавающая кнопка фильтра ---- */
-.app--mobile .fab {
-  position: fixed; z-index: 1250;
-  width: 46px; height: 46px; border: none; border-radius: 50%;
+/* свёрнутый «пик»: скруглённое поле + кнопка фильтра рядом */
+.app--mobile .sheet-peek {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2px 14px 14px;
+}
+.app--mobile .sheet-peek-search {
+  flex: 1; display: flex; align-items: center; gap: 9px;
+  height: 48px; padding: 0 16px;
+  border: 0.5px solid var(--border-2); border-radius: 24px;
+  background: var(--bg-2); color: var(--text-3);
+  font-size: 14px; text-align: left; cursor: pointer;
+}
+.sheet-peek-spark { color: var(--accent); font-size: 15px; }
+.app--mobile .sheet-peek-filter {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border: none; border-radius: 50%;
   background: var(--accent); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; box-shadow: 0 3px 12px rgba(250,60,60,0.4);
+  cursor: pointer; box-shadow: 0 2px 10px rgba(250,60,60,0.35);
 }
-.app--mobile .fab--filter { right: 14px; bottom: calc(var(--mnav-h) + var(--sheet-peek) + 14px); }
+/* свёрнуто — только пик; раскрыто — чат в естественном порядке (ввод снизу) */
+.app--mobile .sheet:not(.sheet--open) .sidebar { display: none; }
+.app--mobile .sheet .sidebar { border-right: none; flex: 1; min-height: 0; }
+.app--mobile .sidebar-header { display: none; }
+.app--mobile .filters { padding-top: 4px; }
+.app--mobile .chat-textarea { min-height: 44px; }
+
+/* подложка: тап по карте сворачивает шторку */
+.app--mobile .sheet-backdrop {
+  position: fixed; inset: 0; bottom: var(--mnav-h);
+  z-index: 1150; background: transparent;
+}
 
 /* ---- Кнопка профиля (переиспользуем ProfileMenu) ---- */
 .app--mobile .mobile-profile-slot {
@@ -1285,11 +1311,23 @@ html, body, #root { height: 100%; }
   box-shadow: 0 3px 12px rgba(250,60,60,0.4);
 }
 .app--mobile .mobile-profile-slot .profile-btn--active { color: #fff; }
+.app--mobile .profile-backdrop {
+  display: block;
+  position: fixed; inset: 0; z-index: 1395;
+  background: rgba(0,0,0,0.32);
+  animation: fadeIn 0.18s ease;
+}
 .app--mobile .mobile-profile-slot .profile-dropdown {
   position: fixed; top: calc(66px + env(safe-area-inset-top));
-  left: 12px; right: 12px; width: auto;
-  max-height: calc(100dvh - 88px - env(safe-area-inset-top)); overflow-y: auto;
+  left: 12px; right: 12px; width: auto; z-index: 1400;
+  max-height: calc(100dvh - 66px - var(--mnav-h) - 16px - env(safe-area-inset-top));
+  overflow-y: auto;
+  animation: sheetPop 0.26s cubic-bezier(.32,.72,0,1);
 }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheetPop { from { opacity: 0; transform: translateY(-10px) scale(0.98); } to { opacity: 1; transform: none; } }
+/* подложка только на мобиле */
+.profile-backdrop { display: none; }
 
 /* ---- Прокручиваемые страницы под навигацией ---- */
 .app--mobile .page-scroll,
@@ -1307,6 +1345,7 @@ html, body, #root { height: 100%; }
 }
 .app--mobile .badges-grid { grid-template-columns: 1fr; }
 .app--mobile .pp-badges { grid-template-columns: repeat(3, 1fr); }
+.app--mobile .ep-av-line { flex-wrap: wrap; justify-content: flex-start; gap: 12px; }
 
 /* ---- Чаты: список ↔ переписка ---- */
 .app--mobile .chats-page {
@@ -1327,9 +1366,25 @@ html, body, #root { height: 100%; }
 }
 .app--mobile .chat-view-head { padding-top: calc(12px + env(safe-area-inset-top)); }
 
-/* ---- Карточка места и маршрут ---- */
-.app--mobile .modal-overlay { position: fixed; z-index: 2000; padding: 0; align-items: flex-end; }
-.app--mobile .modal { max-width: 100%; width: 100%; max-height: 90vh; border-radius: 18px 18px 0 0; }
+/* ---- Карточка места (частичный нижний лист с анимацией) ---- */
+.app--mobile .modal-overlay {
+  position: fixed; z-index: 2000; padding: 0; align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+.app--mobile .modal-overlay--closing { animation: fadeOut 0.24s ease forwards; }
+.app--mobile .modal {
+  max-width: 100%; width: 100%;
+  max-height: 80vh; border-radius: 20px 20px 0 0;
+  animation: sheetUp 0.3s cubic-bezier(.32,.72,0,1);
+}
+.app--mobile .modal--closing { animation: sheetDown 0.24s ease forwards; }
+.app--mobile .modal-image-wrap { height: 150px; border-radius: 20px 20px 0 0; }
+.app--mobile .modal-close { width: 34px; height: 34px; }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheetDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
+
+/* ---- Маршрут на мобиле ---- */
 .app--mobile .route-overlay {
   top: calc(12px + env(safe-area-inset-top)); left: 70px; right: 12px; width: auto; z-index: 1100;
 }

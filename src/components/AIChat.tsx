@@ -162,7 +162,7 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Хочу провести день с пользой, люблю историю..."
+          placeholder="Спросите AI-помощника: например, «маршрут на день по центру»…"
           rows={3}
           disabled={loading}
         />

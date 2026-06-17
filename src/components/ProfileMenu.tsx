@@ -100,6 +100,8 @@ export default function ProfileMenu({ themeMode, onThemeChange, onNavigate }: Pr
         <PersonIcon />
       </button>
 
+      {open && <div className="profile-backdrop" onClick={() => setOpen(false)} />}
+
       {open && (
         <div className="profile-dropdown">
           {view === 'menu' ? (

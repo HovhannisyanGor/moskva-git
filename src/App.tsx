@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import Map from './components/Map';
 import AIChat from './components/AIChat';
@@ -63,6 +63,39 @@ export default function App() {
   const isMobile = useIsMobile();
   const theme = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [dragH, setDragH] = useState<number | null>(null);
+  const dragRef = useRef<{ startY: number; startH: number; moved: boolean } | null>(null);
+
+  const NAV_H = 58;
+  const TOP_GAP = 76; // оставляем место сверху — шторка не доходит до кнопки профиля
+  const PEEK_H = 96;
+  const maxOpenH = () => Math.max(220, window.innerHeight - NAV_H - TOP_GAP);
+
+  const onGrabberDown = (e: React.PointerEvent) => {
+    const sheetEl = (e.currentTarget as HTMLElement).parentElement as HTMLElement;
+    dragRef.current = { startY: e.clientY, startH: sheetEl.offsetHeight, moved: false };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onGrabberMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dy = d.startY - e.clientY;
+    if (Math.abs(dy) > 5) d.moved = true;
+    const h = Math.min(maxOpenH(), Math.max(PEEK_H, d.startH + dy));
+    setDragH(h);
+  };
+  const onGrabberUp = () => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    if (!d.moved) {
+      setSheetOpen((o) => !o);
+    } else if (dragH != null) {
+      const threshold = PEEK_H + (maxOpenH() - PEEK_H) * 0.35;
+      setSheetOpen(dragH > threshold);
+    }
+    setDragH(null);
+  };
 
   const handlePlaceClick = useCallback((place: Place) => {
     setSelectedPlace(place);
@@ -75,6 +108,7 @@ export default function App() {
   const navigate = useCallback((v: View) => {
     setActiveView(v);
     setSheetOpen(false);
+    setDragH(null);
   }, []);
 
   const handleAchievementPlaceClick = useCallback((placeId: number) => {
@@ -113,15 +147,37 @@ export default function App() {
       default:
         return (
           <div className="layout">
-            <div className={`sheet${sheetOpen ? ' sheet--open' : ''}`}>
+            <div
+              className={`sheet${sheetOpen ? ' sheet--open' : ''}`}
+              style={isMobile && dragH != null ? { height: dragH, transition: 'none' } : undefined}
+            >
               {isMobile && (
                 <div
                   className="sheet-grabber"
-                  onClick={() => setSheetOpen((o) => !o)}
+                  onPointerDown={onGrabberDown}
+                  onPointerMove={onGrabberMove}
+                  onPointerUp={onGrabberUp}
                   role="button"
                   aria-label={sheetOpen ? 'Свернуть' : 'Развернуть'}
                 >
                   <span className="sheet-grabber-bar" />
+                </div>
+              )}
+              {isMobile && !sheetOpen && (
+                <div className="sheet-peek">
+                  <button className="sheet-peek-search" onClick={() => setSheetOpen(true)}>
+                    <span className="sheet-peek-spark">✦</span>
+                    <span>Спросите AI — куда сходить?</span>
+                  </button>
+                  <button
+                    className="sheet-peek-filter"
+                    onClick={() => setSheetOpen(true)}
+                    aria-label="Фильтры"
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+                      <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /><circle cx="9" cy="7" r="2.3" fill="var(--bg)" /><circle cx="15" cy="12" r="2.3" fill="var(--bg)" /><circle cx="8" cy="17" r="2.3" fill="var(--bg)" />
+                    </svg>
+                  </button>
                 </div>
               )}
               <AIChat onRouteUpdate={handleRouteUpdate} />
@@ -188,18 +244,14 @@ export default function App() {
 
       {isMobile && (
         <>
-          {isMapView && (
+          {isMapView && !sheetOpen && dragH == null && (
             <div className="mobile-profile-slot">
               <ProfileMenu themeMode={theme.mode} onThemeChange={theme.setMode} onNavigate={navigate} />
             </div>
           )}
 
-          {isMapView && !sheetOpen && (
-            <button className="fab fab--filter" onClick={() => setSheetOpen(true)} aria-label="Фильтры">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-                <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /><circle cx="9" cy="7" r="2.4" fill="var(--bg)" /><circle cx="15" cy="12" r="2.4" fill="var(--bg)" /><circle cx="8" cy="17" r="2.4" fill="var(--bg)" />
-              </svg>
-            </button>
+          {isMapView && sheetOpen && (
+            <div className="sheet-backdrop" onClick={() => setSheetOpen(false)} />
           )}
 
           <nav className="bottom-nav">
