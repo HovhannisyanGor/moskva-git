@@ -34,6 +34,13 @@ const FILTER_OPTIONS = {
   ],
 };
 
+const FILTER_LABELS: Record<keyof FilterParams, string> = {
+  time: 'Время',
+  people: 'Компания',
+  budget: 'Бюджет',
+  interests: 'Интересы',
+};
+
 export default function AIChat({ onRouteUpdate }: AIChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -50,11 +57,32 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
   });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // Какой фильтр сейчас раскрыт (или null). Одно общее состояние на все фильтры —
+  // поэтому тап по другому фильтру сразу переключает на него, без двойного клика.
+  const [openFilter, setOpenFilter] = useState<keyof FilterParams | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Клик вне блока фильтров или Escape — закрыть открытый список.
+  useEffect(() => {
+    if (!openFilter) return;
+    const onDown = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) setOpenFilter(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenFilter(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [openFilter]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -113,23 +141,57 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
         <p className="sidebar-subtitle">Опиши, что хочешь — составлю маршрут</p>
       </div>
 
-      <div className="filters">
-        {(Object.entries(FILTER_OPTIONS) as [keyof FilterParams, typeof FILTER_OPTIONS.time][]).map(([key, options]) => (
-          <div className="filter-group" key={key}>
-            <label className="filter-label">
-              {key === 'time' ? 'Время' : key === 'people' ? 'Компания' : key === 'budget' ? 'Бюджет' : 'Интересы'}
-            </label>
-            <select
-              className="filter-select"
-              value={filters[key]}
-              onChange={e => setFilters(prev => ({ ...prev, [key]: e.target.value }))}
-            >
-              {options.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-        ))}
+      <div className="filters" ref={filtersRef}>
+        {(Object.keys(FILTER_OPTIONS) as (keyof FilterParams)[]).map((key) => {
+          const options = FILTER_OPTIONS[key];
+          const isOpen = openFilter === key;
+          const current = options.find((o) => o.value === filters[key])?.label ?? '';
+          return (
+            <div className={`filter-group${isOpen ? ' filter-group--open' : ''}`} key={key}>
+              <label className="filter-label">{FILTER_LABELS[key]}</label>
+              <button
+                type="button"
+                className={`filter-trigger${isOpen ? ' filter-trigger--open' : ''}`}
+                onClick={() => setOpenFilter(isOpen ? null : key)}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+              >
+                <span>{current}</span>
+                <svg
+                  className="filter-chevron"
+                  width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              {isOpen && (
+                <div className="filter-pop" role="listbox">
+                  {options.map((o, i) => {
+                    const active = filters[key] === o.value;
+                    return (
+                      <button
+                        type="button"
+                        key={o.value}
+                        role="option"
+                        aria-selected={active}
+                        className={`filter-opt${active ? ' filter-opt--active' : ''}`}
+                        style={{ animationDelay: `${i * 35}ms` }}
+                        onClick={() => {
+                          setFilters((prev) => ({ ...prev, [key]: o.value }));
+                          setOpenFilter(null);
+                        }}
+                      >
+                        <span>{o.label}</span>
+                        {active && <span className="filter-check">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="messages">

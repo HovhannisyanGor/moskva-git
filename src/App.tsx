@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import Map from './components/Map';
 import AIChat from './components/AIChat';
@@ -11,11 +11,15 @@ import ProfilePage from './components/ProfilePage';
 import EditProfilePage from './components/EditProfilePage';
 import ChatsPage from './components/ChatsPage';
 import FriendsPage from './components/FriendsPage';
+import AuthScreen from './components/AuthScreen';
+import LandingPage from './components/LandingPage';
 import { useAchievements } from './hooks/useAchievements';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useTheme } from './hooks/useTheme';
 import type { Place, Route, View } from './types';
 import { PLACES } from './data/places';
+import { api, getToken, clearToken, type ApiUser } from './utils/api';
+import { buildDisplayUser, displayBadges, recentPlaces } from './utils/profile';
 import './App.css';
 
 const ICON = {
@@ -59,6 +63,42 @@ export default function App() {
   const [activeView, setActiveView] = useState<View>('map');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const { visits, unlockedBadges, isVisited, toggleVisit, newBadge } = useAchievements();
+
+  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  // Состояние «гостя» (пока не вошёл): сначала лендинг, потом экран входа.
+  const [authView, setAuthView] = useState<'landing' | 'auth'>('landing');
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
+
+  // При загрузке: если есть сохранённый токен — проверяем его и подтягиваем профиль.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!getToken()) {
+        setAuthChecked(true);
+        return;
+      }
+      try {
+        const u = await api.me();
+        if (alive) setCurrentUser(u);
+      } catch {
+        clearToken(); // токен протух — выходим
+      } finally {
+        if (alive) setAuthChecked(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    api.logout();
+    setCurrentUser(null);
+    setAuthView('landing');
+  }, []);
+
+  const handleProfileSaved = useCallback((u: ApiUser) => setCurrentUser(u), []);
 
   const isMobile = useIsMobile();
   const theme = useTheme();
@@ -144,6 +184,43 @@ export default function App() {
     }
   }, []);
 
+  // --- Ворота авторизации: пока не вошёл — показываем экран входа/регистрации ---
+  if (!authChecked) {
+    return (
+      <div
+        className="app"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}
+      >
+        <div style={{ opacity: 0.6 }}>Загрузка…</div>
+      </div>
+    );
+  }
+  if (!currentUser) {
+    if (authView === 'landing') {
+      return (
+        <LandingPage
+          onStart={() => {
+            setAuthTab('register');
+            setAuthView('auth');
+          }}
+          onLogin={() => {
+            setAuthTab('login');
+            setAuthView('auth');
+          }}
+        />
+      );
+    }
+    return (
+      <AuthScreen
+        initialTab={authTab}
+        onAuthed={setCurrentUser}
+        onBack={() => setAuthView('landing')}
+      />
+    );
+  }
+
+  const displayUser = buildDisplayUser(currentUser, visits, unlockedBadges);
+
   function renderView() {
     switch (activeView) {
       case 'achievements':
@@ -159,12 +236,21 @@ export default function App() {
       case 'profile':
         return (
           <ProfilePage
+            user={displayUser}
+            badges={displayBadges(unlockedBadges)}
+            recent={recentPlaces(visits)}
             onEdit={() => navigate('edit-profile')}
             onOpenFriends={() => navigate('friends')}
           />
         );
       case 'edit-profile':
-        return <EditProfilePage onBack={() => navigate('profile')} />;
+        return (
+          <EditProfilePage
+            user={displayUser}
+            onSaved={handleProfileSaved}
+            onBack={() => navigate('profile')}
+          />
+        );
       case 'chats':
         return <ChatsPage />;
       case 'friends':
@@ -257,7 +343,14 @@ export default function App() {
 
   return (
     <div className={`app${isMobile ? ' app--mobile' : ''}`}>
-      {!isMobile && <Topbar activeView={activeView} onNavigate={setActiveView} />}
+      {!isMobile && (
+        <Topbar
+          activeView={activeView}
+          onNavigate={setActiveView}
+          user={displayUser}
+          onLogout={handleLogout}
+        />
+      )}
 
       {newBadge && <div className="badge-toast">🏅 Новый бейдж разблокирован!</div>}
 
@@ -267,7 +360,13 @@ export default function App() {
         <>
           {isMapView && !sheetOpen && dragH == null && (
             <div className="mobile-profile-slot">
-              <ProfileMenu themeMode={theme.mode} onThemeChange={theme.setMode} onNavigate={navigate} />
+              <ProfileMenu
+                themeMode={theme.mode}
+                onThemeChange={theme.setMode}
+                onNavigate={navigate}
+                user={displayUser}
+                onLogout={handleLogout}
+              />
             </div>
           )}
 

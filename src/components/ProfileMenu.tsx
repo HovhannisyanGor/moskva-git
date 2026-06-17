@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ThemeMode } from '../hooks/useTheme';
 import type { View } from '../types';
-import { DEMO_USER } from '../data/mock';
+import type { DisplayUser } from '../utils/profile';
 
 interface ProfileMenuProps {
   themeMode: ThemeMode;
   onThemeChange: (m: ThemeMode) => void;
   onNavigate: (v: View) => void;
+  user: DisplayUser;
+  onLogout: () => void;
 }
 
 type Notifs = { push: boolean; messages: boolean; achievements: boolean };
@@ -45,13 +47,19 @@ const NOTIF_ROWS: { k: keyof Notifs; icon: string; title: string; sub: string }[
   { k: 'achievements', icon: '🏅', title: 'Достижения', sub: 'Новые бейджи и уровни' },
 ];
 
-export default function ProfileMenu({ themeMode, onThemeChange, onNavigate }: ProfileMenuProps) {
+export default function ProfileMenu({
+  themeMode,
+  onThemeChange,
+  onNavigate,
+  user,
+  onLogout,
+}: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'menu' | 'settings'>('menu');
   const [notifs, setNotifs] = useState<Notifs>(readNotifs);
   const ref = useRef<HTMLDivElement>(null);
 
-  const u = DEMO_USER;
+  const u = user;
   const progress = Math.min(1, u.points / u.levelNext);
 
   useEffect(() => {
@@ -193,12 +201,18 @@ export default function ProfileMenu({ themeMode, onThemeChange, onNavigate }: Pr
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
-                <button className="profile-menu-item profile-menu-item--danger" type="button">
+                <button
+                  className="profile-menu-item profile-menu-item--danger"
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onLogout();
+                  }}
+                >
                   <span className="profile-menu-icon">↩</span>
                   <span className="profile-menu-text">
                     <span className="profile-menu-title">Выйти</span>
                   </span>
-                  <span className="profile-soon">скоро</span>
                 </button>
               </div>
             </>

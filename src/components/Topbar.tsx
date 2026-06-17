@@ -1,10 +1,13 @@
 import { useTheme } from '../hooks/useTheme';
 import type { View } from '../types';
+import type { DisplayUser } from '../utils/profile';
 import ProfileMenu from './ProfileMenu';
 
 interface TopbarProps {
   activeView: View;
   onNavigate: (view: View) => void;
+  user: DisplayUser;
+  onLogout: () => void;
 }
 
 const NAV: { view: View; label: string }[] = [
@@ -14,7 +17,7 @@ const NAV: { view: View; label: string }[] = [
   { view: 'chats', label: '💬 Чаты' },
 ];
 
-export default function Topbar({ activeView, onNavigate }: TopbarProps) {
+export default function Topbar({ activeView, onNavigate, user, onLogout }: TopbarProps) {
   const { mode, setMode, effective } = useTheme();
 
   return (
@@ -40,7 +43,13 @@ export default function Topbar({ activeView, onNavigate }: TopbarProps) {
           </button>
         ))}
 
-        <ProfileMenu themeMode={mode} onThemeChange={setMode} onNavigate={onNavigate} />
+        <ProfileMenu
+          themeMode={mode}
+          onThemeChange={setMode}
+          onNavigate={onNavigate}
+          user={user}
+          onLogout={onLogout}
+        />
       </nav>
     </header>
   );

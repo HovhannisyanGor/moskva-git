@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { DEMO_USER } from '../data/mock';
+import { api, type ApiUser } from '../utils/api';
+import type { DisplayUser } from '../utils/profile';
 
 interface EditProfilePageProps {
+  user: DisplayUser;
+  onSaved: (u: ApiUser) => void;
   onBack: () => void;
 }
 
@@ -16,8 +19,8 @@ const AV_COLORS = [
 const AV_EMOJI = ['🦊', '🐺', '🦁', '🐻', '🦉', '🐲'];
 const CITIES = ['Москва', 'Санкт-Петербург', 'Казань', 'Другой'];
 
-export default function EditProfilePage({ onBack }: EditProfilePageProps) {
-  const u = DEMO_USER;
+export default function EditProfilePage({ user, onSaved, onBack }: EditProfilePageProps) {
+  const u = user;
   const [showMore, setShowMore] = useState(false);
   const [avatar, setAvatar] = useState(u.letter);
   const [avatarColor, setAvatarColor] = useState(u.color);
@@ -25,7 +28,30 @@ export default function EditProfilePage({ onBack }: EditProfilePageProps) {
   const [handle, setHandle] = useState(u.handle);
   const [bio, setBio] = useState(u.bio);
   const [city, setCity] = useState(u.city);
-  const [email, setEmail] = useState(u.email);
+  const [email] = useState(u.email);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    setBusy(true);
+    setError('');
+    try {
+      const updated = await api.updateMe({
+        name,
+        handle,
+        bio,
+        city,
+        color: avatarColor,
+        letter: avatar,
+      });
+      onSaved(updated);
+      onBack();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка сохранения');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="page-scroll">
@@ -131,12 +157,8 @@ export default function EditProfilePage({ onBack }: EditProfilePageProps) {
 
         <label className="ep-field">
           <span className="ep-label">Email</span>
-          <input
-            className="ep-input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <input className="ep-input" type="email" value={email} readOnly />
+          <span className="ep-hint">Email пока нельзя изменить</span>
         </label>
 
         <div className="ep-danger">
@@ -155,12 +177,16 @@ export default function EditProfilePage({ onBack }: EditProfilePageProps) {
           </div>
         </div>
 
+        {error && (
+          <div style={{ color: '#d23c3c', fontSize: 14, marginTop: 12 }}>⚠️ {error}</div>
+        )}
+
         <div className="ep-actions">
-          <button className="ep-cancel" type="button" onClick={onBack}>
+          <button className="ep-cancel" type="button" onClick={onBack} disabled={busy}>
             Отмена
           </button>
-          <button className="ep-save" type="button" onClick={onBack}>
-            Сохранить изменения
+          <button className="ep-save" type="button" onClick={save} disabled={busy}>
+            {busy ? 'Сохранение…' : 'Сохранить изменения'}
           </button>
         </div>
       </div>

@@ -1,12 +1,15 @@
-import { DEMO_USER, DEMO_BADGES, DEMO_RECENT, DEMO_FRIENDS } from '../data/mock';
+import type { DisplayUser, DisplayBadge, RecentPlace } from '../utils/profile';
 
 interface ProfilePageProps {
+  user: DisplayUser;
+  badges: DisplayBadge[];
+  recent: RecentPlace[];
   onEdit: () => void;
   onOpenFriends: () => void;
 }
 
-export default function ProfilePage({ onEdit, onOpenFriends }: ProfilePageProps) {
-  const u = DEMO_USER;
+export default function ProfilePage({ user, badges, recent, onEdit, onOpenFriends }: ProfilePageProps) {
+  const u = user;
   const progress = Math.min(1, u.points / u.levelNext);
 
   return (
@@ -68,7 +71,7 @@ export default function ProfilePage({ onEdit, onOpenFriends }: ProfilePageProps)
         <section className="pp-section">
           <div className="pp-section-label">Бейджи</div>
           <div className="pp-badges">
-            {DEMO_BADGES.map((b) => (
+            {badges.map((b) => (
               <div key={b.name} className={`pp-badge ${b.unlocked ? '' : 'pp-badge--locked'}`}>
                 <div className="pp-badge-icon">{b.icon}</div>
                 <div className="pp-badge-name">{b.name}</div>
@@ -80,7 +83,14 @@ export default function ProfilePage({ onEdit, onOpenFriends }: ProfilePageProps)
         <section className="pp-section">
           <div className="pp-section-label">Последние места</div>
           <div className="pp-list">
-            {DEMO_RECENT.map((p) => (
+            {recent.length === 0 && (
+              <div className="pp-list-item">
+                <span className="pp-list-name" style={{ opacity: 0.6 }}>
+                  Пока нет посещённых мест — отмечай места на карте
+                </span>
+              </div>
+            )}
+            {recent.map((p) => (
               <div className="pp-list-item" key={p.name}>
                 <span className="pp-dot" style={{ background: p.color }} />
                 <span className="pp-list-name">{p.name}</span>
@@ -92,17 +102,10 @@ export default function ProfilePage({ onEdit, onOpenFriends }: ProfilePageProps)
 
         <section className="pp-section">
           <div className="pp-section-label">Друзья</div>
-          <div className="pp-friends-row">
-            {DEMO_FRIENDS.map((f) => (
-              <div
-                key={f.handle}
-                className="pp-friend-av"
-                style={{ background: f.color }}
-                title={f.name}
-              >
-                {f.letter}
-              </div>
-            ))}
+          <div className="pp-list-item">
+            <span className="pp-list-name" style={{ opacity: 0.6 }}>
+              Пока нет друзей — добавим на странице «Друзья»
+            </span>
           </div>
         </section>
       </div>
