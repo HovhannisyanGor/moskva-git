@@ -1,73 +1,93 @@
-# React + TypeScript + Vite
+<div align="center">
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/localee-dark.png">
+    <img src="public/localee-light.png" alt="Localee" width="110">
+  </picture>
 
-Currently, two official plugins are available:
+  <h1>Localee</h1>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+  <p><b>AI-гид по Москве</b> — персональные маршруты под твоё время, бюджет и интересы.</p>
 
-## React Compiler
+  <p>
+    <a href="https://localee.ru"><b>🌐 Открыть localee.ru</b></a>
+  </p>
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+  <p>
+    <img src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" alt="React">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+    <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite">
+    <img src="https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white" alt="Node.js">
+    <img src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite">
+  </p>
 
-## Expanding the ESLint configuration
+</div>
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## О проекте
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+**Localee** — веб-приложение для исследования Москвы. Опиши, чего хочешь, — и AI-помощник
+построит персональный маршрут прямо на интерактивной карте. А ещё это личный профиль,
+достижения за посещённые места и (скоро) друзья и совместные прогулки.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Возможности
+
+- ✨ **AI-маршруты** — задаёшь время, компанию, бюджет и интересы → получаешь готовый маршрут на карте
+- 🗺️ **Интерактивная карта** — достопримечательности, парки, музеи и рестораны (2ГИС MapGL)
+- 🏅 **Достижения** — отмечай места, открывай бейджи, повышай уровень
+- 👤 **Аккаунты** — регистрация, вход и личный профиль с редактированием
+- 🤝 **Друзья и чаты** — _в разработке_
+- 📱 **Адаптивный интерфейс** — десктоп и мобильный (жестовая нижняя шторка, светлая/тёмная тема)
+
+## Стек
+
+| Слой | Технологии |
+|------|------------|
+| Фронтенд | React 19 · TypeScript · Vite |
+| Карта | 2ГИС MapGL |
+| Бэкенд | Node.js · Express · SQLite · JWT |
+| Хостинг | reg.ru (nginx) |
+
+## Структура
+
+```
+localee/
+├── src/             # фронтенд (React)
+│   ├── components/   # экраны и UI
+│   ├── utils/        # API-клиент, помощники
+│   └── data/         # места и бейджи
+├── server/          # бэкенд (Node + Express + SQLite)
+│   └── src/          # маршруты, БД, авторизация
+└── TASKS.md         # дорожная карта проекта
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Запуск локально
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Нужен **Node.js 20+**.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Фронтенд:**
+```bash
+npm install
+npm run dev          # http://localhost:5173
 ```
+
+**Бэкенд (аккаунты):**
+```bash
+cd server
+npm install
+cp .env.example .env
+npm run dev          # http://localhost:4000
+```
+
+> Адрес API задаётся переменной `VITE_API_URL` (по умолчанию `http://localhost:4000`).
+
+## Дорожная карта
+
+Актуальные задачи, идеи и прогресс — в [TASKS.md](TASKS.md).
+
+---
+
+<div align="center">
+  <sub>Сделано с ❤️ для исследователей Москвы</sub>
+</div>
