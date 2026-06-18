@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import type { DisplayUser, DisplayBadge, RecentPlace } from '../utils/profile';
+
+const BADGE_PREVIEW = 5; // сколько бейджей показываем до нажатия «+»
 
 interface ProfilePageProps {
   user: DisplayUser;
@@ -11,6 +14,9 @@ interface ProfilePageProps {
 export default function ProfilePage({ user, badges, recent, onEdit, onOpenFriends }: ProfilePageProps) {
   const u = user;
   const progress = Math.min(1, u.points / u.levelNext);
+  const [showAllBadges, setShowAllBadges] = useState(false);
+  const shownBadges = showAllBadges ? badges : badges.slice(0, BADGE_PREVIEW);
+  const hiddenCount = badges.length - BADGE_PREVIEW;
 
   return (
     <div className="page-scroll">
@@ -72,14 +78,36 @@ export default function ProfilePage({ user, badges, recent, onEdit, onOpenFriend
         </div>
 
         <section className="pp-section">
-          <div className="pp-section-label">Бейджи</div>
+          <div className="pp-section-label">
+            Бейджи <span className="pp-section-count">{u.badges} / {badges.length}</span>
+          </div>
           <div className="pp-badges">
-            {badges.map((b) => (
+            {shownBadges.map((b) => (
               <div key={b.name} className={`pp-badge ${b.unlocked ? '' : 'pp-badge--locked'}`}>
                 <div className="pp-badge-icon">{b.icon}</div>
                 <div className="pp-badge-name">{b.name}</div>
               </div>
             ))}
+            {!showAllBadges && hiddenCount > 0 && (
+              <button
+                type="button"
+                className="pp-badge pp-badge--more"
+                onClick={() => setShowAllBadges(true)}
+              >
+                <div className="pp-badge-icon">+{hiddenCount}</div>
+                <div className="pp-badge-name">Ещё</div>
+              </button>
+            )}
+            {showAllBadges && (
+              <button
+                type="button"
+                className="pp-badge pp-badge--more"
+                onClick={() => setShowAllBadges(false)}
+              >
+                <div className="pp-badge-icon">×</div>
+                <div className="pp-badge-name">Свернуть</div>
+              </button>
+            )}
           </div>
         </section>
 
