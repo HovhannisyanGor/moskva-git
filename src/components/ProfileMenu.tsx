@@ -9,6 +9,8 @@ interface ProfileMenuProps {
   onNavigate: (v: View) => void;
   user: DisplayUser;
   onLogout: () => void;
+  navMode?: boolean; // режим вкладки нижней навигации (мобила): аватар + подпись «Профиль»
+  navActive?: boolean; // подсветка, когда открыта страница профиля
 }
 
 type Notifs = { push: boolean; messages: boolean; achievements: boolean };
@@ -53,6 +55,8 @@ export default function ProfileMenu({
   onNavigate,
   user,
   onLogout,
+  navMode = false,
+  navActive = false,
 }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'menu' | 'settings'>('menu');
@@ -98,24 +102,37 @@ export default function ProfileMenu({
     onNavigate(v);
   };
 
+  const avatarStyle = u.avatar
+    ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: u.color };
+
   return (
-    <div className="topbar-profile" ref={ref}>
-      <button
-        className={`profile-btn ${open ? 'profile-btn--active' : ''}`}
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Профиль"
-        style={
-          u.avatar
-            ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-            : { background: u.color }
-        }
-      >
-        {u.avatar ? null : u.letter ? (
-          <span className="profile-btn-letter">{u.letter}</span>
-        ) : (
-          <PersonIcon />
-        )}
-      </button>
+    <div className={`topbar-profile${navMode ? ' topbar-profile--nav' : ''}`} ref={ref}>
+      {navMode ? (
+        <button
+          className={`profile-nav-btn${open || navActive ? ' profile-nav-btn--active' : ''}`}
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Профиль"
+        >
+          <span className="profile-nav-av" style={avatarStyle}>
+            {u.avatar ? '' : u.letter || ''}
+          </span>
+          <span>Профиль</span>
+        </button>
+      ) : (
+        <button
+          className={`profile-btn ${open ? 'profile-btn--active' : ''}`}
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Профиль"
+          style={avatarStyle}
+        >
+          {u.avatar ? null : u.letter ? (
+            <span className="profile-btn-letter">{u.letter}</span>
+          ) : (
+            <PersonIcon />
+          )}
+        </button>
+      )}
 
       {open && <div className="profile-backdrop" onClick={() => setOpen(false)} />}
 

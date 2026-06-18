@@ -359,33 +359,34 @@ export default function App() {
 
       {isMobile && (
         <>
-          {isMapView && !sheetOpen && dragH == null && (
-            <div className="mobile-profile-slot">
-              <ProfileMenu
-                themeMode={theme.mode}
-                onThemeChange={theme.setMode}
-                onNavigate={navigate}
-                user={displayUser}
-                onLogout={handleLogout}
-              />
-            </div>
-          )}
-
           {isMapView && sheetOpen && (
             <div className="sheet-backdrop" onClick={() => setSnap(0)} />
           )}
 
           <nav className="bottom-nav">
-            {MOBILE_NAV.map((item) => (
-              <button
-                key={item.view}
-                className={`bottom-nav-btn${navActive(item.view) ? ' bottom-nav-btn--active' : ''}`}
-                onClick={() => navigate(item.view)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
+            {MOBILE_NAV.map((item) =>
+              item.view === 'profile' ? (
+                <ProfileMenu
+                  key="profile"
+                  navMode
+                  navActive={activeView === 'profile' || activeView === 'edit-profile'}
+                  themeMode={theme.mode}
+                  onThemeChange={theme.setMode}
+                  onNavigate={navigate}
+                  user={displayUser}
+                  onLogout={handleLogout}
+                />
+              ) : (
+                <button
+                  key={item.view}
+                  className={`bottom-nav-btn${navActive(item.view) ? ' bottom-nav-btn--active' : ''}`}
+                  onClick={() => navigate(item.view)}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ),
+            )}
           </nav>
         </>
       )}

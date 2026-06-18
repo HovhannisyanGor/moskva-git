@@ -1133,14 +1133,21 @@ html, body { background: var(--bg); }
 .pp-section { margin-bottom: 26px; }
 .pp-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 12px; }
 .pp-section-count { font-size: 12px; color: var(--text-3); font-weight: 400; margin-left: 4px; }
-.pp-badges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pp-badges {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 1fr; /* все плитки одной высоты */
+  gap: 8px;
+}
 .pp-badge {
   background: var(--accent-soft); border: 0.5px solid rgba(250,60,60,0.25);
-  border-radius: var(--radius); padding: 11px 6px; text-align: center;
+  border-radius: var(--radius); padding: 10px 6px; text-align: center;
+  min-height: 86px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .pp-badge--locked { background: var(--bg-2); border-color: var(--border); opacity: 0.55; }
-.pp-badge-icon { font-size: 22px; margin-bottom: 5px; line-height: 1; }
-.pp-badge-name { font-size: 10.5px; color: var(--text-2); line-height: 1.25; }
+.pp-badge-icon { font-size: 22px; margin-bottom: 6px; line-height: 1; }
+.pp-badge-name { font-size: 10.5px; color: var(--text-2); line-height: 1.25; overflow-wrap: anywhere; }
 .pp-badge--more {
   background: transparent; border: 1px dashed var(--border-2); cursor: pointer;
   font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1493,6 +1500,30 @@ html, body { background: var(--bg); }
 .bottom-nav-btn span { white-space: nowrap; }
 .bottom-nav-btn--active { color: var(--accent); }
 
+/* Профиль-вкладка с аватаром (нижняя навигация) */
+.app--mobile .bottom-nav .topbar-profile { flex: 1; margin: 0; position: relative; display: flex; }
+.profile-nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding-top: 6px; border: none; background: transparent; cursor: pointer;
+  font: inherit; font-size: 10px; color: var(--text-3);
+}
+.profile-nav-av {
+  width: 25px; height: 25px; border-radius: 50%;
+  background-size: cover; background-position: center;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 600; line-height: 1;
+  border: 1.5px solid transparent; box-sizing: border-box;
+}
+.profile-nav-btn--active { color: var(--accent); }
+.profile-nav-btn--active .profile-nav-av { border-color: var(--accent); }
+/* меню профиля из нижней панели — открывается вверх */
+.app--mobile .topbar-profile--nav .profile-dropdown {
+  position: fixed; left: 12px; right: 12px; top: auto; width: auto;
+  bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom) + 10px);
+  max-height: calc(100dvh - var(--mnav-h) - 96px); overflow-y: auto;
+  animation: sheetPop 0.26s cubic-bezier(.32,.72,0,1);
+}
+
 /* ---- Нижняя шторка (ИИ-чат + фильтры) ---- */
 .app--mobile .sheet {
   display: flex; flex-direction: column;
@@ -1590,7 +1621,7 @@ html, body { background: var(--bg); }
   padding: calc(18px + env(safe-area-inset-top)) 16px 24px;
 }
 .app--mobile .badges-grid { grid-template-columns: 1fr; }
-.app--mobile .pp-badges { grid-template-columns: repeat(3, 1fr); }
+.app--mobile .pp-badges { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .app--mobile .ep-av-line { gap: 8px; }
 
 /* ---- Чаты: список ↔ переписка ---- */
