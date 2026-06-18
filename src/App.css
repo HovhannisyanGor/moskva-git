@@ -100,6 +100,9 @@ html, body { background: var(--bg); }
 }
 .profile-btn:hover,
 .profile-btn--active { border-color: var(--accent); color: var(--accent); }
+/* буква/эмодзи аватара в кнопке профиля (когда нет фото) */
+.profile-btn { overflow: hidden; }
+.profile-btn-letter { color: #fff; font-size: 15px; font-weight: 600; line-height: 1; }
 
 .profile-dropdown {
   position: absolute;

@@ -104,8 +104,17 @@ export default function ProfileMenu({
         className={`profile-btn ${open ? 'profile-btn--active' : ''}`}
         onClick={() => setOpen((o) => !o)}
         aria-label="Профиль"
+        style={
+          u.avatar
+            ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: u.color }
+        }
       >
-        <PersonIcon />
+        {u.avatar ? null : u.letter ? (
+          <span className="profile-btn-letter">{u.letter}</span>
+        ) : (
+          <PersonIcon />
+        )}
       </button>
 
       {open && <div className="profile-backdrop" onClick={() => setOpen(false)} />}
