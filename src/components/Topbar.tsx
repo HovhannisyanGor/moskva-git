@@ -12,7 +12,6 @@ interface TopbarProps {
 
 const NAV: { view: View; label: string }[] = [
   { view: 'map', label: 'Карта' },
-  { view: 'places', label: 'Все места' },
   { view: 'achievements', label: '🏅 Достижения' },
   { view: 'chats', label: '💬 Чаты' },
 ];

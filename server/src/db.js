@@ -35,5 +35,18 @@ if (!userCols.some((c) => c.name === 'avatar')) {
   db.exec("ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''");
 }
 
+// Личные сообщения (чаты 1-на-1). Диалог = все сообщения между двумя пользователями.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS messages (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id    INTEGER NOT NULL,
+    recipient_id INTEGER NOT NULL,
+    text         TEXT    NOT NULL,
+    read         INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT    NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, recipient_id)');
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

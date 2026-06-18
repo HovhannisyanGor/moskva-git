@@ -66,7 +66,9 @@
       "Bash(gh auth *)",
       "Bash(gh repo *)",
       "Bash(node -e 'const D=require\\(\"better-sqlite3\"\\);const db=new D\\(\"data/localee.db\"\\);console.log\\(\"удалён временный:\",db.prepare\\(\"DELETE FROM users WHERE email=?\"\\).run\\(\"ui-temp@local.test\"\\).changes,\"| осталось:\",db.prepare\\(\"SELECT COUNT\\(*\\) c FROM users\"\\).get\\(\\).c\\)')",
-      "Bash(node -e 'const D=require\\(\"better-sqlite3\"\\);const db=new D\\(\"data/localee.db\"\\);console.log\\(\"удалён временный:\",db.prepare\\(\"DELETE FROM users WHERE email=?\"\\).run\\(\"grid-temp@local.test\"\\).changes,\"| осталось:\",db.prepare\\(\"SELECT COUNT\\(*\\) c FROM users\"\\).get\\(\\).c\\)')"
+      "Bash(node -e 'const D=require\\(\"better-sqlite3\"\\);const db=new D\\(\"data/localee.db\"\\);console.log\\(\"удалён временный:\",db.prepare\\(\"DELETE FROM users WHERE email=?\"\\).run\\(\"grid-temp@local.test\"\\).changes,\"| осталось:\",db.prepare\\(\"SELECT COUNT\\(*\\) c FROM users\"\\).get\\(\\).c\\)')",
+      "Bash(git pull *)",
+      "Bash(node -e 'let s=\"\";process.stdin.on\\(\"data\",d=>s+=d\\).on\\(\"end\",\\(\\)=>{const o=JSON.parse\\(s\\);console.log\\(\"TOKEN=\"+o.token+\" ID=\"+o.user.id\\)}\\)')"
     ]
   }
 }

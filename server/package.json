@@ -6,7 +6,8 @@
   "description": "Бэкенд Localee — аккаунты, друзья, чаты",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "seed": "node seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

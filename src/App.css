@@ -1379,6 +1379,8 @@ html, body { background: var(--bg); }
 }
 
 /* ===== CHATS ===== */
+.chats-empty { padding: 24px 16px; text-align: center; color: var(--text-3); font-size: 13px; line-height: 1.5; }
+.chat-empty-view { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; color: var(--text-3); font-size: 14px; text-align: center; }
 .chats-page { flex: 1; display: flex; overflow: hidden; }
 .chats-list { width: 300px; flex-shrink: 0; border-right: 0.5px solid var(--border); display: flex; flex-direction: column; background: var(--bg); }
 .chats-list-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 12px; }

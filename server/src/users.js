@@ -5,3 +5,16 @@ export function toPublicUser(row) {
   const { password_hash, ...rest } = row;
   return rest;
 }
+
+// Краткие данные собеседника для чатов и поиска (без email и пароля).
+export function toChatUser(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    handle: row.handle,
+    color: row.color,
+    letter: row.letter,
+    avatar: row.avatar || '',
+  };
+}

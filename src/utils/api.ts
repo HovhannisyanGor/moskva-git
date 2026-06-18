@@ -30,6 +30,27 @@ export interface ApiUser {
   created_at: string;
 }
 
+// Типы для чатов
+export interface ChatUser {
+  id: number;
+  name: string;
+  handle: string;
+  color: string;
+  letter: string;
+  avatar: string;
+}
+export interface ChatListItem {
+  user: ChatUser;
+  last: { text: string; fromMe: boolean; createdAt: string } | null;
+  unread: number;
+}
+export interface ChatMessageItem {
+  id: number;
+  fromMe: boolean;
+  text: string;
+  createdAt: string;
+}
+
 // Универсальный запрос: добавляет токен (если нужно), разбирает JSON,
 // а при ошибке кидает понятное сообщение от сервера.
 async function request<T>(
@@ -93,6 +114,33 @@ export const api = {
       auth: true,
     });
     return data.user;
+  },
+
+  // --- Чаты ---
+  async chatList() {
+    const data = await request<{ chats: ChatListItem[] }>('/api/chats', { auth: true });
+    return data.chats;
+  },
+  async chatMessages(userId: number) {
+    return request<{ user: ChatUser; messages: ChatMessageItem[] }>(
+      `/api/chats/${userId}/messages`,
+      { auth: true },
+    );
+  },
+  async chatSend(userId: number, text: string) {
+    const data = await request<{ message: ChatMessageItem }>(`/api/chats/${userId}/messages`, {
+      method: 'POST',
+      body: { text },
+      auth: true,
+    });
+    return data.message;
+  },
+  async searchUsers(q: string) {
+    const data = await request<{ users: ChatUser[] }>(
+      `/api/users/search?q=${encodeURIComponent(q)}`,
+      { auth: true },
+    );
+    return data.users;
   },
 
   logout() {
