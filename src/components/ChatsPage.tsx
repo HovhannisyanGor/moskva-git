@@ -12,6 +12,21 @@ function timeShort(iso: string | undefined): string {
     : d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 }
 
+function dayKey(iso: string) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toDateString();
+}
+function dayLabel(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const today = new Date();
+  const yest = new Date();
+  yest.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === yest.toDateString()) return 'Вчера';
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
+
 function avatarStyle(u: { avatar: string; color: string }) {
   return u.avatar
     ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -25,6 +40,7 @@ export default function ChatsPage() {
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [mobilePane, setMobilePane] = useState<'list' | 'chat'>('list');
   const [newChat, setNewChat] = useState(false);
   const [searchQ, setSearchQ] = useState('');
@@ -63,7 +79,10 @@ export default function ChatsPage() {
   useEffect(() => {
     activeIdRef.current = activeUserId;
     if (activeUserId == null) return;
-    loadMessages(activeUserId);
+    setLoading(true);
+    loadMessages(activeUserId).finally(() => {
+      if (activeIdRef.current === activeUserId) setLoading(false);
+    });
     const t = setInterval(() => loadMessages(activeUserId), 3000);
     return () => clearInterval(t);
   }, [activeUserId, loadMessages]);
@@ -218,15 +237,23 @@ export default function ChatsPage() {
             </header>
 
             <div className="chat-messages">
-              {messages.length === 0 && (
+              {loading && messages.length === 0 && <div className="chats-empty">Загрузка…</div>}
+              {!loading && messages.length === 0 && (
                 <div className="chats-empty">Сообщений пока нет — напиши первым 👋</div>
               )}
-              {messages.map((m) => (
-                <div key={m.id} className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}`}>
-                  <div className="chat-bubble">{m.text}</div>
-                  <div className="chat-msg-time">{timeShort(m.createdAt)}</div>
-                </div>
-              ))}
+              {messages.map((m, i) => {
+                const prev = messages[i - 1];
+                const showDay = !prev || dayKey(prev.createdAt) !== dayKey(m.createdAt);
+                return (
+                  <div key={m.id}>
+                    {showDay && <div className="chat-day">{dayLabel(m.createdAt)}</div>}
+                    <div className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}`}>
+                      <div className="chat-bubble">{m.text}</div>
+                      <div className="chat-msg-time">{timeShort(m.createdAt)}</div>
+                    </div>
+                  </div>
+                );
+              })}
               <div ref={endRef} />
             </div>
 
