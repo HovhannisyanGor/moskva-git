@@ -16,8 +16,11 @@ export default function ProfilePage({ user, badges, recent, onEdit, onOpenFriend
     <div className="page-scroll">
       <div className="profile-page">
         <div className="pp-head">
-          <div className="pp-avatar" style={{ background: u.color }}>
-            {u.letter}
+          <div
+            className="pp-avatar"
+            style={u.avatar ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: u.color }}
+          >
+            {u.avatar ? '' : u.letter}
           </div>
           <div className="pp-id">
             <h1 className="pp-name">{u.name}</h1>

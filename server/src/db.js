@@ -24,9 +24,16 @@ db.exec(`
     letter        TEXT    NOT NULL DEFAULT '?',
     bio           TEXT    NOT NULL DEFAULT '',
     city          TEXT    NOT NULL DEFAULT 'Москва',
+    avatar        TEXT    NOT NULL DEFAULT '',
     created_at    TEXT    NOT NULL
   );
 `);
+
+// Миграция: добавляем avatar в уже существующие базы (если колонки ещё нет).
+const userCols = db.prepare('PRAGMA table_info(users)').all();
+if (!userCols.some((c) => c.name === 'avatar')) {
+  db.exec("ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''");
+}
 
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

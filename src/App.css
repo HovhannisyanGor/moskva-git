@@ -64,7 +64,7 @@ html, body { background: var(--bg); }
   background: var(--bg);
 }
 
-.topbar-logo { display: flex; align-items: center; gap: 8px; }
+.topbar-logo { display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
 .logo-icon { font-size: 20px; color: var(--accent); }
 .logo-text { font-size: 16px; font-weight: 500; color: var(--text); }
 .logo-tagline { font-size: 13px; color: var(--text-3); }
@@ -1168,9 +1168,15 @@ html, body { background: var(--bg); }
   border-radius: var(--radius); padding: 14px;
   display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;
 }
-.ep-av-line { display: flex; gap: 10px; justify-content: space-between; }
+.ep-av-line {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+}
 .ep-av {
-  width: 46px; height: 46px; border-radius: 50%; border: 2px solid transparent;
+  width: 100%; max-width: 46px; aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; font-weight: 600; color: #fff; cursor: pointer;
 }
@@ -1573,7 +1579,7 @@ html, body { background: var(--bg); }
 }
 .app--mobile .badges-grid { grid-template-columns: 1fr; }
 .app--mobile .pp-badges { grid-template-columns: repeat(3, 1fr); }
-.app--mobile .ep-av-line { flex-wrap: wrap; justify-content: flex-start; gap: 12px; }
+.app--mobile .ep-av-line { gap: 8px; }
 
 /* ---- Чаты: список ↔ переписка ---- */
 .app--mobile .chats-page {

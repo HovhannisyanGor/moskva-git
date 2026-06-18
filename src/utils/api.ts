@@ -26,6 +26,7 @@ export interface ApiUser {
   letter: string;
   bio: string;
   city: string;
+  avatar: string;
   created_at: string;
 }
 
@@ -85,7 +86,7 @@ export const api = {
     return data.user;
   },
 
-  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter'>>) {
+  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar'>>) {
     const data = await request<{ user: ApiUser }>('/api/auth/me', {
       method: 'PATCH',
       body: patch,

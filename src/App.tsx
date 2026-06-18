@@ -62,7 +62,7 @@ export default function App() {
   const [activeRoute, setActiveRoute] = useState<Route | null>(null);
   const [activeView, setActiveView] = useState<View>('map');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-  const { visits, unlockedBadges, isVisited, toggleVisit, newBadge } = useAchievements();
+  const { visits, unlockedBadges, isVisited, toggleVisit, newBadge, resetAchievements } = useAchievements();
 
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -249,6 +249,7 @@ export default function App() {
             user={displayUser}
             onSaved={handleProfileSaved}
             onBack={() => navigate('profile')}
+            onResetAchievements={resetAchievements}
           />
         );
       case 'chats':

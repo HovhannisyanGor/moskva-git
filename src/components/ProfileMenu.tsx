@@ -115,8 +115,11 @@ export default function ProfileMenu({
           {view === 'menu' ? (
             <>
               <button className="profile-header profile-header--btn" onClick={() => go('profile')}>
-                <div className="profile-avatar" style={{ background: u.color }}>
-                  {u.letter}
+                <div
+                  className="profile-avatar"
+                  style={u.avatar ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: u.color }}
+                >
+                  {u.avatar ? '' : u.letter}
                 </div>
                 <div className="profile-id">
                   <div className="profile-name">{u.name}</div>

@@ -63,6 +63,11 @@ export function useAchievements() {
 
   const clearNewBadge = useCallback(() => setNewBadge(null), []);
 
+  // Сброс достижений: очищаем посещённые места и открытые бейджи.
+  const resetAchievements = useCallback(() => {
+    setState({ visits: [], unlockedBadges: [] });
+  }, []);
+
   return {
     visits: state.visits,
     unlockedBadges: state.unlockedBadges,
@@ -70,5 +75,6 @@ export function useAchievements() {
     toggleVisit,
     newBadge,
     clearNewBadge,
+    resetAchievements,
   };
 }

@@ -22,7 +22,12 @@ export default function Topbar({ activeView, onNavigate, user, onLogout }: Topba
 
   return (
     <header className="topbar">
-      <div className="topbar-logo">
+      <button
+        type="button"
+        className="topbar-logo"
+        onClick={() => onNavigate('map')}
+        title="На главную"
+      >
         <img
           className="logo-mark"
           src={effective === 'dark' ? '/localee-dark.png' : '/localee-light.png'}
@@ -30,7 +35,7 @@ export default function Topbar({ activeView, onNavigate, user, onLogout }: Topba
         />
         <span className="logo-text">Localee</span>
         <span className="logo-tagline">— исследуй город умно</span>
-      </div>
+      </button>
 
       <nav className="topbar-nav">
         {NAV.map((n) => (

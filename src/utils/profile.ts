@@ -11,6 +11,7 @@ export interface DisplayUser {
   id: string;
   letter: string;
   color: string;
+  avatar: string;
   city: string;
   since: string;
   bio: string;
@@ -104,6 +105,7 @@ export function buildDisplayUser(
     id: String(u.id).padStart(5, '0'),
     letter: u.letter,
     color: u.color,
+    avatar: u.avatar ?? '',
     city: u.city,
     bio: u.bio,
     email: u.email,

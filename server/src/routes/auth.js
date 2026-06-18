@@ -100,17 +100,21 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   const color = b.color !== undefined ? String(b.color).trim() : user.color;
   const letter = b.letter !== undefined ? String(b.letter).trim().slice(0, 2) : user.letter;
   const handle = b.handle !== undefined ? String(b.handle).trim() : user.handle;
+  const avatar = b.avatar !== undefined ? String(b.avatar) : user.avatar;
 
   if (!name) return res.status(400).json({ error: 'Имя не может быть пустым' });
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(handle))
     return res.status(400).json({ error: 'Ник: 3–20 символов, латиница, цифры или _' });
+  // Аватар-фото: либо пусто, либо корректный data:image небольшого размера (~1 МБ).
+  if (avatar && (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(avatar) || avatar.length > 1_500_000))
+    return res.status(400).json({ error: 'Картинка не подходит (формат или размер)' });
 
   // Ник занят кем-то другим?
   if (db.prepare('SELECT 1 FROM users WHERE handle = ? AND id != ?').get(handle, req.userId))
     return res.status(409).json({ error: 'Этот ник уже занят' });
 
-  db.prepare('UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ? WHERE id = ?')
-    .run(name, bio, city, color, letter, handle, req.userId);
+  db.prepare('UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ? WHERE id = ?')
+    .run(name, bio, city, color, letter, handle, avatar, req.userId);
 
   const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: toPublicUser(updated) });
