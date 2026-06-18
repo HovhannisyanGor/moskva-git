@@ -60,7 +60,11 @@
       "Bash(git fetch *)",
       "Bash(git rev-list *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)"
     ]
   }
 }
