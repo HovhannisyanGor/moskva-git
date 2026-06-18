@@ -58,7 +58,9 @@
       "Bash(node src/index.js)",
       "Bash(node -e 'const D=require\\(\"better-sqlite3\"\\);const db=new D\\(\"data/localee.db\"\\);console.log\\(\"удалён временный:\",db.prepare\\(\"DELETE FROM users WHERE email=?\"\\).run\\(\"filter-temp@local.test\"\\).changes,\"| осталось:\",db.prepare\\(\"SELECT COUNT\\(*\\) c FROM users\"\\).get\\(\\).c\\)')",
       "Bash(git fetch *)",
-      "Bash(git rev-list *)"
+      "Bash(git rev-list *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
