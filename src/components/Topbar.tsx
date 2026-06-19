@@ -7,6 +7,7 @@ interface TopbarProps {
   activeView: View;
   onNavigate: (view: View) => void;
   user: DisplayUser;
+  isAdmin: boolean;
   onLogout: () => void;
 }
 
@@ -16,7 +17,7 @@ const NAV: { view: View; label: string }[] = [
   { view: 'chats', label: '💬 Чаты' },
 ];
 
-export default function Topbar({ activeView, onNavigate, user, onLogout }: TopbarProps) {
+export default function Topbar({ activeView, onNavigate, user, isAdmin, onLogout }: TopbarProps) {
   const { mode, setMode, effective } = useTheme();
 
   return (
@@ -47,11 +48,21 @@ export default function Topbar({ activeView, onNavigate, user, onLogout }: Topba
           </button>
         ))}
 
+        {isAdmin && (
+          <button
+            className={`nav-btn ${activeView === 'admin' ? 'nav-btn--active' : ''}`}
+            onClick={() => onNavigate('admin')}
+          >
+            🛠 Админка
+          </button>
+        )}
+
         <ProfileMenu
           themeMode={mode}
           onThemeChange={setMode}
           onNavigate={onNavigate}
           user={user}
+          isAdmin={isAdmin}
           onLogout={onLogout}
         />
       </nav>

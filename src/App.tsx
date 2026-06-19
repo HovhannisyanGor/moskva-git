@@ -11,6 +11,7 @@ import ProfilePage from './components/ProfilePage';
 import EditProfilePage from './components/EditProfilePage';
 import ChatsPage from './components/ChatsPage';
 import FriendsPage from './components/FriendsPage';
+import AdminPage from './components/AdminPage';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
 import { useAchievements } from './hooks/useAchievements';
@@ -220,6 +221,8 @@ export default function App() {
   }
 
   const displayUser = buildDisplayUser(currentUser, visits, unlockedBadges);
+  const isAdmin = currentUser.role === 'admin';
+  const meId = currentUser.id;
 
   function renderView() {
     switch (activeView) {
@@ -256,6 +259,10 @@ export default function App() {
         return <ChatsPage />;
       case 'friends':
         return <FriendsPage />;
+      case 'admin':
+        // Вход в админку показан только админам, и сервер всё равно проверяет роль.
+        // Если сюда как-то попал не-админ — просто ничего не рендерим.
+        return isAdmin ? <AdminPage meId={meId} /> : null;
       default:
         return (
           <div className="layout">
@@ -349,6 +356,7 @@ export default function App() {
           activeView={activeView}
           onNavigate={setActiveView}
           user={displayUser}
+          isAdmin={isAdmin}
           onLogout={handleLogout}
         />
       )}
@@ -374,6 +382,7 @@ export default function App() {
                   onThemeChange={theme.setMode}
                   onNavigate={navigate}
                   user={displayUser}
+                  isAdmin={isAdmin}
                   onLogout={handleLogout}
                 />
               ) : (

@@ -9,6 +9,7 @@ interface ProfileMenuProps {
   onNavigate: (v: View) => void;
   user: DisplayUser;
   onLogout: () => void;
+  isAdmin?: boolean; // показывать пункт «Админка»
   navMode?: boolean; // режим вкладки нижней навигации (мобила): аватар + подпись «Профиль»
   navActive?: boolean; // подсветка, когда открыта страница профиля
 }
@@ -55,6 +56,7 @@ export default function ProfileMenu({
   onNavigate,
   user,
   onLogout,
+  isAdmin = false,
   navMode = false,
   navActive = false,
 }: ProfileMenuProps) {
@@ -218,6 +220,16 @@ export default function ProfileMenu({
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
+                {isAdmin && (
+                  <button className="profile-menu-item" type="button" onClick={() => go('admin')}>
+                    <span className="profile-menu-icon">🛠</span>
+                    <span className="profile-menu-text">
+                      <span className="profile-menu-title">Админка</span>
+                      <span className="profile-menu-sub">Пользователи и управление</span>
+                    </span>
+                    <span className="profile-menu-arrow">›</span>
+                  </button>
+                )}
                 <button
                   className="profile-menu-item"
                   type="button"

@@ -1461,6 +1461,36 @@ html, body { background: var(--bg); }
 .fr-find { width: 100%; margin-top: 16px; padding: 12px; border: 0.5px dashed var(--border-2); background: transparent; color: var(--text-2); border-radius: var(--radius); font-size: 13px; cursor: pointer; }
 .fr-find:hover { color: var(--text); border-color: var(--accent); }
 
+/* ---- Админ-панель ---- */
+.admin-page { max-width: 560px; margin: 0 auto; padding: 28px 20px 60px; }
+.adm-head { margin-bottom: 16px; }
+.adm-title { display: block; font-size: 20px; font-weight: 600; color: var(--text); }
+.adm-sub { font-size: 12px; color: var(--text-3); }
+.adm-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 14px 0 16px; }
+.adm-stat { background: var(--bg-2); padding: 13px 4px; text-align: center; }
+.adm-stat b { display: block; font-size: 18px; font-weight: 700; color: var(--accent); }
+.adm-stat span { font-size: 11px; color: var(--text-3); }
+.adm-search { margin-bottom: 12px; }
+.adm-search input { width: 100%; font-size: 13px; padding: 10px 13px; border-radius: var(--radius); border: 0.5px solid var(--border-2); background: var(--bg-2); color: var(--text); }
+.adm-error { font-size: 13px; color: var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; }
+.adm-empty { text-align: center; color: var(--text-3); padding: 36px 10px; font-size: 13px; }
+.adm-count { font-size: 11px; color: var(--text-3); margin: 4px 4px 8px; }
+.adm-list { display: flex; flex-direction: column; gap: 6px; }
+.adm-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-2); }
+.adm-av { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 600; flex-shrink: 0; }
+.adm-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.adm-name { font-size: 14px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.adm-badge { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 7px; border-radius: 20px; background: var(--accent-soft); color: var(--accent); }
+.adm-badge--me { background: var(--border); color: var(--text-3); }
+.adm-row-sub { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-row-meta { font-size: 11px; color: var(--text-3); opacity: 0.75; }
+.adm-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.adm-act { font-size: 12px; padding: 7px 11px; border-radius: 8px; border: 0.5px solid var(--border-2); background: var(--bg); color: var(--text-2); cursor: pointer; white-space: nowrap; }
+.adm-act:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.adm-act:disabled { opacity: 0.4; cursor: not-allowed; }
+.adm-act--danger { color: var(--accent); }
+.adm-act--danger:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* На десктопе обёртка-шторка прозрачна для грида, ручка и кнопка «назад» скрыты */
 .sheet { display: contents; }
 .sheet-grabber { display: none; }
@@ -1615,7 +1645,8 @@ html, body { background: var(--bg); }
 }
 .app--mobile .profile-page,
 .app--mobile .edit-page,
-.app--mobile .friends-page {
+.app--mobile .friends-page,
+.app--mobile .admin-page {
   max-width: 100%;
   padding: calc(18px + env(safe-area-inset-top)) 16px 28px;
 }

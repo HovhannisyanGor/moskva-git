@@ -35,6 +35,19 @@ if (!userCols.some((c) => c.name === 'avatar')) {
   db.exec("ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''");
 }
 
+// Миграция: роль пользователя — 'user' (обычный) или 'admin' (администратор).
+if (!userCols.some((c) => c.name === 'role')) {
+  db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+}
+
+// Бутстрап администраторов: всех, чьи email перечислены в ADMIN_EMAILS, повышаем
+// до admin при старте. Безопасно гонять каждый раз. Роли, выданные внутри самой
+// админки, не трогаем — понижаем только если так решит администратор вручную.
+if (config.adminEmails.length) {
+  const promote = db.prepare("UPDATE users SET role = 'admin' WHERE email = ? AND role != 'admin'");
+  for (const email of config.adminEmails) promote.run(email);
+}
+
 // Личные сообщения (чаты 1-на-1). Диалог = все сообщения между двумя пользователями.
 db.exec(`
   CREATE TABLE IF NOT EXISTS messages (

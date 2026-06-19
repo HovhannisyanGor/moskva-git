@@ -71,4 +71,5 @@ export type View =
   | 'profile'
   | 'edit-profile'
   | 'chats'
-  | 'friends';
+  | 'friends'
+  | 'admin';

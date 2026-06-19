@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { hashPassword, verifyPassword, signToken, requireAuth } from '../auth.js';
-import { toPublicUser } from '../users.js';
+import { toPublicUser, syncAdminRole } from '../users.js';
 
 export const authRouter = Router();
 
@@ -58,6 +58,7 @@ authRouter.post('/register', (req, res) => {
   }
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+  syncAdminRole(user); // если этот email в ADMIN_EMAILS — сразу делаем админом
   const token = signToken(user);
   res.status(201).json({ token, user: toPublicUser(user) });
 });
@@ -76,6 +77,7 @@ authRouter.post('/login', (req, res) => {
   if (!user || !verifyPassword(password, user.password_hash))
     return res.status(401).json({ error: 'Неверный email или пароль' });
 
+  syncAdminRole(user); // email мог попасть в ADMIN_EMAILS уже после регистрации
   const token = signToken(user);
   res.json({ token, user: toPublicUser(user) });
 });
@@ -84,6 +86,7 @@ authRouter.post('/login', (req, res) => {
 authRouter.get('/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+  syncAdminRole(user); // поддерживаем роль в актуальном состоянии
   res.json({ user: toPublicUser(user) });
 });
 

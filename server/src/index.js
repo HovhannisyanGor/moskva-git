@@ -7,6 +7,7 @@ import './db.js'; // создаёт таблицы при старте
 import { authRouter } from './routes/auth.js';
 import { chatsRouter } from './routes/chats.js';
 import { usersRouter } from './routes/users.js';
+import { adminRouter } from './routes/admin.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -28,6 +29,8 @@ app.use('/api/auth', authRouter);
 // Чаты (личные сообщения) и поиск пользователей
 app.use('/api/chats', chatsRouter);
 app.use('/api/users', usersRouter);
+// Админка: список пользователей и управление ими (только для роли admin)
+app.use('/api/admin', adminRouter);
 
 // Если запрошенного маршрута нет — отвечаем аккуратным JSON, а не HTML.
 app.use((req, res) => res.status(404).json({ error: 'Маршрут не найден' }));

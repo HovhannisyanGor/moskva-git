@@ -27,7 +27,29 @@ export interface ApiUser {
   bio: string;
   city: string;
   avatar: string;
+  role: 'user' | 'admin';
   created_at: string;
+}
+
+// --- Админка ---
+export interface AdminUser {
+  id: number;
+  handle: string;
+  name: string;
+  email: string;
+  color: string;
+  letter: string;
+  bio: string;
+  city: string;
+  avatar: string;
+  role: 'user' | 'admin';
+  created_at: string;
+  protected: boolean; // задан в ADMIN_EMAILS на сервере — роль не снять и не удалить
+}
+export interface AdminStats {
+  users: number;
+  admins: number;
+  messages: number;
 }
 
 // Типы для чатов
@@ -141,6 +163,32 @@ export const api = {
       { auth: true },
     );
     return data.users;
+  },
+
+  // --- Админка (доступна только пользователям с ролью admin) ---
+  async adminStats() {
+    const data = await request<{ stats: AdminStats }>('/api/admin/stats', { auth: true });
+    return data.stats;
+  },
+  async adminUsers(q = '') {
+    return request<{ total: number; users: AdminUser[] }>(
+      `/api/admin/users?q=${encodeURIComponent(q)}`,
+      { auth: true },
+    );
+  },
+  async adminSetRole(id: number, role: 'admin' | 'user') {
+    const data = await request<{ user: AdminUser }>(`/api/admin/users/${id}/role`, {
+      method: 'PATCH',
+      body: { role },
+      auth: true,
+    });
+    return data.user;
+  },
+  async adminDeleteUser(id: number) {
+    return request<{ ok: boolean; deleted: number }>(`/api/admin/users/${id}`, {
+      method: 'DELETE',
+      auth: true,
+    });
   },
 
   logout() {
