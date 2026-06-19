@@ -1208,6 +1208,26 @@ html, body { background: var(--bg); }
 }
 .ep-av--more:hover { border-color: var(--accent); color: var(--accent); }
 .ep-av--active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+
+/* Редактор аватара: палитра цветов + сетка эмодзи */
+.ep-swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.ep-swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.ep-swatch--active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+.ep-emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; }
+.ep-emoji {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ep-emoji--active { border-color: var(--accent); background: var(--accent-soft); }
+
 .ep-field { display: block; margin-bottom: 16px; }
 .ep-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 7px; }
 .ep-input {
