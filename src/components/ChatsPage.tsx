@@ -71,7 +71,7 @@ export default function ChatsPage() {
   // Список чатов: загрузка + опрос раз в 3 сек.
   useEffect(() => {
     loadChats();
-    const t = setInterval(loadChats, 3000);
+    const t = setInterval(loadChats, 2500);
     return () => clearInterval(t);
   }, [loadChats]);
 
@@ -83,7 +83,7 @@ export default function ChatsPage() {
     loadMessages(activeUserId).finally(() => {
       if (activeIdRef.current === activeUserId) setLoading(false);
     });
-    const t = setInterval(() => loadMessages(activeUserId), 3000);
+    const t = setInterval(() => loadMessages(activeUserId), 1200);
     return () => clearInterval(t);
   }, [activeUserId, loadMessages]);
 
@@ -104,7 +104,7 @@ export default function ChatsPage() {
 
   async function onSearch(q: string) {
     setSearchQ(q);
-    if (q.trim().length < 2) {
+    if (q.trim().length < 1) {
       setResults([]);
       return;
     }
@@ -154,17 +154,17 @@ export default function ChatsPage() {
           <>
             <div className="chats-search">
               <input
-                placeholder="🔍 Найти по нику или имени…"
+                placeholder="🔍 Ник, имя или ID…"
                 value={searchQ}
                 onChange={(e) => onSearch(e.target.value)}
                 autoFocus
               />
             </div>
             <div className="chats-items">
-              {searchQ.trim().length < 2 && (
-                <div className="chats-empty">Введи минимум 2 символа</div>
+              {searchQ.trim().length < 1 && (
+                <div className="chats-empty">Введи ник, имя или ID</div>
               )}
-              {searchQ.trim().length >= 2 && results.length === 0 && (
+              {searchQ.trim().length >= 1 && results.length === 0 && (
                 <div className="chats-empty">Никого не нашлось</div>
               )}
               {results.map((u) => (

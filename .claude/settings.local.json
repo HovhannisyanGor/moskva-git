@@ -72,7 +72,8 @@
       "Bash(curl -s --retry 20 --retry-delay 1 --retry-all-errors -o /dev/null -w \"backend :4000 → HTTP %{http_code}\\\\n\" http://localhost:4000/api/health)",
       "Bash(curl -s -o /dev/null -w \"frontend :5173 → HTTP %{http_code}\\\\n\" http://localhost:5173/)",
       "Bash(curl -s http://localhost:4000/api/health)",
-      "Bash(echo \"health: $\\(curl -s http://localhost:4000/api/health\\)\")"
+      "Bash(echo \"health: $\\(curl -s http://localhost:4000/api/health\\)\")",
+      "Bash(node -e 'let s=\"\";process.stdin.on\\(\"data\",d=>s+=d\\).on\\(\"end\",\\(\\)=>{const o=JSON.parse\\(s\\);console.log\\(\"TOKEN=\"+\\(o.token||\\(\"ERR \"+JSON.stringify\\(o\\)\\)\\)\\)}\\)')"
     ]
   }
 }

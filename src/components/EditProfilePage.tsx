@@ -9,15 +9,16 @@ interface EditProfilePageProps {
   onResetAchievements: () => void;
 }
 
-const AV_COLORS = [
-  { letter: 'Э', color: '#FA3C3C' },
-  { letter: 'А', color: '#378ADD' },
-  { letter: 'М', color: '#3FAE6E' },
-  { letter: 'К', color: '#BA7517' },
-  { letter: 'С', color: '#9B7FE6' },
-  { letter: 'Д', color: '#E0568A' },
+// Палитра цветов фона аватара.
+const COLORS = [
+  '#FA3C3C', '#378ADD', '#3FAE6E', '#BA7517', '#9B7FE6',
+  '#E0568A', '#D4537E', '#16A39A', '#E8893B', '#5B6CE8',
 ];
-const AV_EMOJI = ['🦊', '🐺', '🦁', '🐻', '🦉', '🐲'];
+// Эмодзи для аватара.
+const EMOJIS = [
+  '🦊', '🐺', '🦁', '🐻', '🦉', '🐲', '🐱', '🐶', '🐼',
+  '🐸', '🦄', '🐧', '🗺️', '⭐', '🔥', '🎒', '☕', '🎧',
+];
 const CITIES = ['Москва', 'Санкт-Петербург', 'Казань', 'Другой'];
 
 // Уменьшаем выбранное фото до 256×256 (обрезка по центру) и отдаём как data URL —
@@ -50,8 +51,7 @@ function fileToAvatar(file: File): Promise<string> {
 
 export default function EditProfilePage({ user, onSaved, onBack, onResetAchievements }: EditProfilePageProps) {
   const u = user;
-  const [showMore, setShowMore] = useState(false);
-  const [avatar, setAvatar] = useState(u.letter);
+  const [avatarChar, setAvatarChar] = useState(u.letter); // буква или эмодзи на аватаре
   const [avatarColor, setAvatarColor] = useState(u.color);
   const [avatarImg, setAvatarImg] = useState(u.avatar || ''); // фото (data URL) или пусто
   const [name, setName] = useState(u.name);
@@ -62,6 +62,8 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const usingLetter = !EMOJIS.includes(avatarChar);
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -79,10 +81,16 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
     }
   }
 
-  // Выбор стандартной буквы/эмодзи убирает фото.
-  function pickPreset(letter: string, color: string) {
-    setAvatar(letter);
-    setAvatarColor(color);
+  function pickColor(c: string) {
+    setAvatarColor(c);
+    setAvatarImg(''); // выбрали цвет — показываем цвет, а не фото
+  }
+  function pickEmoji(e: string) {
+    setAvatarChar(e);
+    setAvatarImg('');
+  }
+  function useLetter() {
+    setAvatarChar((name.trim()[0] || '?').toUpperCase());
     setAvatarImg('');
   }
 
@@ -96,7 +104,7 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
         bio,
         city,
         color: avatarColor,
-        letter: avatar,
+        letter: avatarChar,
         avatar: avatarImg,
       });
       onSaved(updated);
@@ -129,11 +137,11 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
 
         <div className="ep-avatar-row">
           <div className="ep-avatar" style={avatarStyle}>
-            {avatarImg ? '' : avatar}
+            {avatarImg ? '' : avatarChar}
           </div>
           <div>
             <div className="ep-avatar-title">Аватар</div>
-            <div className="ep-avatar-sub">Выбери из стандартных или загрузи своё фото</div>
+            <div className="ep-avatar-sub">Загрузи фото или собери из цвета и эмодзи</div>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
             <button className="ep-upload" type="button" onClick={() => fileRef.current?.click()}>
               {avatarImg ? 'Заменить фото' : 'Загрузить фото'}
@@ -145,49 +153,55 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
                 onClick={() => setAvatarImg('')}
                 style={{ marginLeft: 8 }}
               >
-                Убрать
+                Убрать фото
               </button>
             )}
           </div>
         </div>
 
-        <div className="ep-avatar-grid">
-          <div className="ep-av-line">
-            {AV_COLORS.map((a) => (
-              <button
-                key={a.letter}
-                type="button"
-                className={`ep-av ${avatar === a.letter && !avatarImg ? 'ep-av--active' : ''}`}
-                style={{ background: a.color }}
-                onClick={() => pickPreset(a.letter, a.color)}
-              >
-                {a.letter}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="ep-av ep-av--more"
-              onClick={() => setShowMore((s) => !s)}
-              aria-label={showMore ? 'Скрыть варианты' : 'Больше вариантов'}
-            >
-              {showMore ? '×' : '+'}
-            </button>
-          </div>
-          {showMore && (
-            <div className="ep-av-line ep-av-line--more">
-              {AV_EMOJI.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  className={`ep-av ep-av--emoji ${avatar === e && !avatarImg ? 'ep-av--active' : ''}`}
-                  onClick={() => pickPreset(e, 'var(--bg-3)')}
-                >
-                  {e}
-                </button>
-              ))}
+        {!avatarImg && (
+          <>
+            <div className="ep-field">
+              <span className="ep-label">Цвет</span>
+              <div className="ep-swatches">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Цвет ${c}`}
+                    className={`ep-swatch ${avatarColor === c ? 'ep-swatch--active' : ''}`}
+                    style={{ background: c }}
+                    onClick={() => pickColor(c)}
+                  />
+                ))}
+              </div>
             </div>
-          )}
-        </div>
+
+            <div className="ep-field">
+              <span className="ep-label">Иконка</span>
+              <div className="ep-emoji-grid">
+                <button
+                  type="button"
+                  className={`ep-emoji ${usingLetter ? 'ep-emoji--active' : ''}`}
+                  onClick={useLetter}
+                  title="Первая буква имени"
+                >
+                  Аа
+                </button>
+                {EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    className={`ep-emoji ${avatarChar === e ? 'ep-emoji--active' : ''}`}
+                    onClick={() => pickEmoji(e)}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <label className="ep-field">
           <span className="ep-label">Имя</span>
@@ -248,9 +262,7 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
           </div>
         </div>
 
-        {error && (
-          <div style={{ color: '#d23c3c', fontSize: 14, marginTop: 12 }}>⚠️ {error}</div>
-        )}
+        {error && <div style={{ color: '#d23c3c', fontSize: 14, marginTop: 12 }}>⚠️ {error}</div>}
 
         <div className="ep-actions">
           <button className="ep-cancel" type="button" onClick={onBack} disabled={busy}>

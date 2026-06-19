@@ -8,16 +8,18 @@ usersRouter.use(requireAuth);
 
 // GET /api/users/search?q=ник — поиск людей по нику или имени (для нового чата).
 usersRouter.get('/search', (req, res) => {
-  const q = String(req.query.q ?? '').trim();
-  if (q.length < 2) return res.json({ users: [] });
+  const q = String(req.query.q ?? '').trim().replace(/^@+/, ''); // «@anna» → «anna»
+  if (q.length < 1) return res.json({ users: [] });
   const like = `%${q}%`;
+  // Если ввели число — ищем ещё и по ID (поддерживаем и «18», и «00018»).
+  const asId = /^\d+$/.test(q) ? parseInt(q, 10) : -1;
   const rows = db
     .prepare(`
       SELECT * FROM users
-      WHERE id != ? AND (handle LIKE ? OR name LIKE ?)
-      ORDER BY handle
+      WHERE id != ? AND (handle LIKE ? OR name LIKE ? OR id = ?)
+      ORDER BY (id = ?) DESC, handle
       LIMIT 10
     `)
-    .all(req.userId, like, like);
+    .all(req.userId, like, like, asId, asId);
   res.json({ users: rows.map(toChatUser) });
 });
