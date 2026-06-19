@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code — локальный конфиг (свой на каждой машине, не коммитим)
+.claude/settings.local.json
