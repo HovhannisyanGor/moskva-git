@@ -8,6 +8,7 @@ interface TopbarProps {
   onNavigate: (view: View) => void;
   user: DisplayUser;
   isAdmin: boolean;
+  chatsUnread?: number;
   onLogout: () => void;
 }
 
@@ -17,7 +18,7 @@ const NAV: { view: View; label: string }[] = [
   { view: 'chats', label: '💬 Чаты' },
 ];
 
-export default function Topbar({ activeView, onNavigate, user, isAdmin, onLogout }: TopbarProps) {
+export default function Topbar({ activeView, onNavigate, user, isAdmin, chatsUnread = 0, onLogout }: TopbarProps) {
   const { mode, setMode, effective } = useTheme();
 
   return (
@@ -45,6 +46,9 @@ export default function Topbar({ activeView, onNavigate, user, isAdmin, onLogout
             onClick={() => onNavigate(n.view)}
           >
             {n.label}
+            {n.view === 'chats' && chatsUnread > 0 && (
+              <span className="nav-badge nav-badge--inline">{chatsUnread > 99 ? '99+' : chatsUnread}</span>
+            )}
           </button>
         ))}
 

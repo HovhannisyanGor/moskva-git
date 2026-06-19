@@ -60,6 +60,7 @@ export interface ChatUser {
   color: string;
   letter: string;
   avatar: string;
+  online?: boolean; // активен в течение последней минуты
 }
 export interface ChatListItem {
   user: ChatUser;

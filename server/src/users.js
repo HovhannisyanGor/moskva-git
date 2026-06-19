@@ -22,6 +22,14 @@ export function syncAdminRole(row) {
   return row;
 }
 
+// Пользователь считается «онлайн», если был активен недавно (в пределах окна).
+const ONLINE_WINDOW_MS = 60 * 1000; // 60 секунд
+export function isOnline(row) {
+  if (!row?.last_seen) return false;
+  const t = new Date(row.last_seen).getTime();
+  return Number.isFinite(t) && Date.now() - t < ONLINE_WINDOW_MS;
+}
+
 // Краткие данные собеседника для чатов и поиска (без email и пароля).
 export function toChatUser(row) {
   if (!row) return null;
@@ -32,5 +40,6 @@ export function toChatUser(row) {
     color: row.color,
     letter: row.letter,
     avatar: row.avatar || '',
+    online: isOnline(row),
   };
 }

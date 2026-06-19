@@ -1434,9 +1434,13 @@ html, body { background: var(--bg); }
 .chat-view { flex: 1; display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
 .chat-view-head { display: flex; align-items: center; gap: 11px; padding: 12px 18px; border-bottom: 0.5px solid var(--border); }
 .chat-view-name { font-size: 15px; font-weight: 600; color: var(--text); display: block; }
-.chat-view-status { font-size: 12px; color: #3FAE6E; }
+.chat-view-status { font-size: 12px; color: var(--text-3); }
+.chat-view-status--online { color: #3FAE6E; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
-.chat-day { align-self: center; font-size: 11px; color: var(--text-3); background: var(--bg-2); padding: 3px 12px; border-radius: 10px; }
+/* Каждое сообщение обёрнуто в div — делаем его flex-колонкой, чтобы у .chat-msg
+   работал align-self (иначе «мои» сообщения не прижимаются к правому краю). */
+.chat-messages > div { display: flex; flex-direction: column; }
+.chat-day { width: fit-content; max-width: 80%; margin: 2px auto 10px; text-align: center; font-size: 11px; color: var(--text-3); background: var(--bg-2); padding: 3px 12px; border-radius: 10px; }
 .chat-msg { display: flex; flex-direction: column; max-width: 72%; }
 .chat-msg--them { align-self: flex-start; align-items: flex-start; }
 .chat-msg--me { align-self: flex-end; align-items: flex-end; }
@@ -1453,6 +1457,42 @@ html, body { background: var(--bg); }
 .chat-input { display: flex; gap: 10px; padding: 12px 18px; border-top: 0.5px solid var(--border); }
 .chat-input input { flex: 1; font-size: 14px; padding: 11px 14px; border-radius: 22px; border: 0.5px solid var(--border-2); background: var(--bg-2); color: var(--text); }
 .chat-send { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; }
+
+/* Группировка сообщений: подряд от одного автора — плотнее и со «склеенными» углами */
+.chat-msg--grouped { margin-top: -6px; }
+.chat-msg--me.chat-msg--grouped .chat-bubble { border-top-right-radius: 6px; }
+.chat-msg--them.chat-msg--grouped .chat-bubble { border-top-left-radius: 6px; }
+
+/* Бейдж непрочитанных на вкладках навигации */
+.bottom-nav-ic { position: relative; display: inline-flex; }
+.nav-badge {
+  min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
+  background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
+  border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+}
+.bottom-nav-ic .nav-badge { position: absolute; top: -6px; left: 58%; border: 1.5px solid var(--bg); }
+.nav-badge--inline { margin-left: 7px; vertical-align: middle; }
+
+/* Всплывашка «Новое сообщение» */
+.chat-toast {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 11px;
+  max-width: min(360px, calc(100vw - 28px));
+  padding: 11px 15px; border-radius: 16px;
+  background: var(--bg-2); color: var(--text);
+  border: 0.5px solid var(--border);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+  z-index: 9999; cursor: pointer; text-align: left;
+  animation: toastIn 0.28s ease;
+}
+.chat-toast-ic {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent); font-size: 16px;
+}
+.chat-toast-body { display: flex; flex-direction: column; min-width: 0; }
+.chat-toast-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.chat-toast-text { font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
 
 /* ===== FRIENDS ===== */
 .friends-page { max-width: 440px; margin: 0 auto; padding: 28px 20px 60px; }
@@ -1695,6 +1735,9 @@ html, body { background: var(--bg); }
   font-size: 26px; line-height: 1; cursor: pointer;
 }
 .app--mobile .chat-view-head { padding-top: calc(12px + env(safe-area-inset-top)); }
+/* На мобилке пузыри уходят почти к самым краям экрана */
+.app--mobile .chat-messages { padding-left: 8px; padding-right: 8px; }
+.app--mobile .chat-msg { max-width: 84%; }
 
 /* ---- Карточка места (частичный нижний лист с анимацией) ---- */
 .app--mobile .modal-overlay {

@@ -40,6 +40,11 @@ if (!userCols.some((c) => c.name === 'role')) {
   db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
 }
 
+// Миграция: время последней активности — для статуса «онлайн».
+if (!userCols.some((c) => c.name === 'last_seen')) {
+  db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT NOT NULL DEFAULT ''");
+}
+
 // Бутстрап администраторов: всех, чьи email перечислены в ADMIN_EMAILS, повышаем
 // до admin при старте. Безопасно гонять каждый раз. Роли, выданные внутри самой
 // админки, не трогаем — понижаем только если так решит администратор вручную.

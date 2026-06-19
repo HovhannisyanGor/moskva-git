@@ -33,7 +33,11 @@ function avatarStyle(u: { avatar: string; color: string }) {
     : { background: u.color };
 }
 
-export default function ChatsPage() {
+interface ChatsPageProps {
+  onActiveChatChange?: (userId: number | null) => void;
+}
+
+export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
@@ -91,6 +95,12 @@ export default function ChatsPage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, activeUserId]);
+
+  // Сообщаем приложению, какой чат открыт — чтобы по нему не показывать всплывашку.
+  useEffect(() => {
+    onActiveChatChange?.(activeUserId);
+    return () => onActiveChatChange?.(null);
+  }, [activeUserId, onActiveChatChange]);
 
   function openChat(user: ChatUser) {
     setActiveUserId(user.id);
@@ -171,6 +181,7 @@ export default function ChatsPage() {
                 <button key={u.id} type="button" className="chat-item" onClick={() => openChat(u)}>
                   <span className="chat-av" style={avatarStyle(u)}>
                     {u.avatar ? '' : u.letter}
+                    {u.online && <span className="chat-online-dot" />}
                   </span>
                   <span className="chat-item-mid">
                     <span className="chat-item-name">{u.name}</span>
@@ -198,6 +209,7 @@ export default function ChatsPage() {
               >
                 <span className="chat-av" style={avatarStyle(c.user)}>
                   {c.user.avatar ? '' : c.user.letter}
+                  {c.user.online && <span className="chat-online-dot" />}
                 </span>
                 <span className="chat-item-mid">
                   <span className="chat-item-name">{c.user.name}</span>
@@ -229,10 +241,13 @@ export default function ChatsPage() {
               </button>
               <span className="chat-av chat-av--sm" style={avatarStyle(activeUser)}>
                 {activeUser.avatar ? '' : activeUser.letter}
+                {activeUser.online && <span className="chat-online-dot" />}
               </span>
               <span className="chat-view-id">
                 <span className="chat-view-name">{activeUser.name}</span>
-                <span className="chat-view-status">@{activeUser.handle}</span>
+                <span className={`chat-view-status${activeUser.online ? ' chat-view-status--online' : ''}`}>
+                  {activeUser.online ? 'в сети' : `@${activeUser.handle}`}
+                </span>
               </span>
             </header>
 
@@ -243,13 +258,21 @@ export default function ChatsPage() {
               )}
               {messages.map((m, i) => {
                 const prev = messages[i - 1];
+                const next = messages[i + 1];
                 const showDay = !prev || dayKey(prev.createdAt) !== dayKey(m.createdAt);
+                // Группировка: подряд идущие сообщения одного автора в один день идут
+                // плотнее, а время показываем только у последнего в группе.
+                const sameAsPrev = !showDay && !!prev && prev.fromMe === m.fromMe;
+                const sameAsNext =
+                  !!next && next.fromMe === m.fromMe && dayKey(next.createdAt) === dayKey(m.createdAt);
                 return (
                   <div key={m.id}>
                     {showDay && <div className="chat-day">{dayLabel(m.createdAt)}</div>}
-                    <div className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}`}>
+                    <div
+                      className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}${sameAsPrev ? ' chat-msg--grouped' : ''}`}
+                    >
                       <div className="chat-bubble">{m.text}</div>
-                      <div className="chat-msg-time">{timeShort(m.createdAt)}</div>
+                      {!sameAsNext && <div className="chat-msg-time">{timeShort(m.createdAt)}</div>}
                     </div>
                   </div>
                 );

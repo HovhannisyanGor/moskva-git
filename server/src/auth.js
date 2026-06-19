@@ -25,6 +25,8 @@ export function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, config.jwtSecret);
     req.userId = payload.id;
+    // Отмечаем активность — для статуса «онлайн». Дёшево: один UPDATE по id.
+    db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(new Date().toISOString(), payload.id);
     next();
   } catch {
     return res.status(401).json({ error: 'Неверный или просроченный токен' });

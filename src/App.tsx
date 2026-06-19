@@ -17,6 +17,7 @@ import LandingPage from './components/LandingPage';
 import { useAchievements } from './hooks/useAchievements';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useTheme } from './hooks/useTheme';
+import { useChatNotifications } from './hooks/useChatNotifications';
 import type { Place, Route, View } from './types';
 import { PLACES } from './data/places';
 import { api, getToken, clearToken, type ApiUser } from './utils/api';
@@ -67,6 +68,8 @@ export default function App() {
 
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  // Какой чат сейчас открыт — по нему не показываем всплывашку (ты его и так читаешь).
+  const [activeChatUser, setActiveChatUser] = useState<number | null>(null);
   // Состояние «гостя» (пока не вошёл): сначала лендинг, потом экран входа.
   const [authView, setAuthView] = useState<'landing' | 'auth'>('landing');
   const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
@@ -103,6 +106,8 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const theme = useTheme();
+  // Непрочитанные сообщения (для бейджа) + всплывашка о новом сообщении.
+  const { totalUnread, toast, dismissToast } = useChatNotifications(!!currentUser, activeChatUser);
   // Нижняя шторка: 0 = свёрнуто (пик), 1 = полностью раскрыто
   const [snap, setSnap] = useState(0);
   const [dragH, setDragH] = useState<number | null>(null);
@@ -256,7 +261,7 @@ export default function App() {
           />
         );
       case 'chats':
-        return <ChatsPage />;
+        return <ChatsPage onActiveChatChange={setActiveChatUser} />;
       case 'friends':
         return <FriendsPage />;
       case 'admin':
@@ -357,11 +362,29 @@ export default function App() {
           onNavigate={setActiveView}
           user={displayUser}
           isAdmin={isAdmin}
+          chatsUnread={totalUnread}
           onLogout={handleLogout}
         />
       )}
 
       {newBadge && <div className="badge-toast">🏅 Новый бейдж разблокирован!</div>}
+
+      {toast && (
+        <button
+          type="button"
+          className="chat-toast"
+          onClick={() => {
+            dismissToast();
+            navigate('chats');
+          }}
+        >
+          <span className="chat-toast-ic">💬</span>
+          <span className="chat-toast-body">
+            <span className="chat-toast-name">{toast.name}</span>
+            <span className="chat-toast-text">{toast.text}</span>
+          </span>
+        </button>
+      )}
 
       {renderView()}
 
@@ -391,7 +414,12 @@ export default function App() {
                   className={`bottom-nav-btn${navActive(item.view) ? ' bottom-nav-btn--active' : ''}`}
                   onClick={() => navigate(item.view)}
                 >
-                  {item.icon}
+                  <span className="bottom-nav-ic">
+                    {item.icon}
+                    {item.view === 'chats' && totalUnread > 0 && (
+                      <span className="nav-badge">{totalUnread > 99 ? '99+' : totalUnread}</span>
+                    )}
+                  </span>
                   <span>{item.label}</span>
                 </button>
               ),
