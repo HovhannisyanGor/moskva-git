@@ -78,5 +78,18 @@ if (!msgCols.some((c) => c.name === 'forwarded_from')) {
   db.exec("ALTER TABLE messages ADD COLUMN forwarded_from TEXT NOT NULL DEFAULT ''"); // имя автора при пересылке
 }
 
+// Дружба между пользователями. Одна строка на пару: кто отправил заявку (requester)
+// и кому (addressee). status: 'pending' (ждёт ответа) или 'accepted' (друзья).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS friendships (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester_id INTEGER NOT NULL,
+    addressee_id INTEGER NOT NULL,
+    status       TEXT    NOT NULL DEFAULT 'pending',
+    created_at   TEXT    NOT NULL,
+    UNIQUE(requester_id, addressee_id)
+  );
+`);
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

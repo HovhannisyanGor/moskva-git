@@ -36,9 +36,16 @@ function avatarStyle(u: { avatar: string; color: string }) {
 interface ChatsPageProps {
   onActiveChatChange?: (userId: number | null) => void;
   meName?: string; // имя текущего пользователя — для пометки «Переслано от …»
+  openWith?: ChatUser | null; // открыть диалог с этим пользователем (например, из «Друзей»)
+  onOpenedWith?: () => void; // сообщить, что openWith обработан
 }
 
-export default function ChatsPage({ onActiveChatChange, meName = '' }: ChatsPageProps) {
+export default function ChatsPage({
+  onActiveChatChange,
+  meName = '',
+  openWith = null,
+  onOpenedWith,
+}: ChatsPageProps) {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
@@ -119,6 +126,15 @@ export default function ChatsPage({ onActiveChatChange, meName = '' }: ChatsPage
     const t = setTimeout(() => setToast(''), 1800);
     return () => clearTimeout(t);
   }, [toast]);
+
+  // Открыть конкретный диалог снаружи (например, кнопка «Написать» у друга).
+  useEffect(() => {
+    if (openWith) {
+      openChat(openWith);
+      onOpenedWith?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openWith?.id]);
 
   function openChat(user: ChatUser) {
     setActiveUserId(user.id);

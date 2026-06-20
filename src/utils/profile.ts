@@ -26,6 +26,7 @@ export interface DisplayUser {
 }
 
 export interface DisplayBadge {
+  id: string;
   icon: string;
   name: string;
   unlocked: boolean;
@@ -122,6 +123,7 @@ export function buildDisplayUser(
 
 export function displayBadges(unlockedBadges: string[]): DisplayBadge[] {
   return BADGES.map((b) => ({
+    id: b.id,
     icon: b.icon,
     name: b.title,
     unlocked: unlockedBadges.includes(b.id),

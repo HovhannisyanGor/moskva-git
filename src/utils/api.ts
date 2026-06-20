@@ -192,6 +192,26 @@ export const api = {
     return data.users;
   },
 
+  // --- Друзья ---
+  async friends() {
+    return request<{ friends: ChatUser[]; incoming: ChatUser[]; outgoing: ChatUser[] }>(
+      '/api/friends',
+      { auth: true },
+    );
+  },
+  async addFriend(userId: number) {
+    return request<{ status: string }>(`/api/friends/${userId}`, { method: 'POST', auth: true });
+  },
+  async acceptFriend(userId: number) {
+    return request<{ status: string }>(`/api/friends/${userId}/accept`, {
+      method: 'POST',
+      auth: true,
+    });
+  },
+  async removeFriend(userId: number) {
+    return request<{ ok: boolean }>(`/api/friends/${userId}`, { method: 'DELETE', auth: true });
+  },
+
   // --- Админка (доступна только пользователям с ролью admin) ---
   async adminStats() {
     const data = await request<{ stats: AdminStats }>('/api/admin/stats', { auth: true });

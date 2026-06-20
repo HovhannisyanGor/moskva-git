@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { DisplayUser, DisplayBadge, RecentPlace } from '../utils/profile';
+import { BadgeIcon } from './Icon';
 
 const BADGE_PREVIEW = 5; // сколько бейджей показываем до нажатия «+»
 
@@ -83,8 +84,8 @@ export default function ProfilePage({ user, badges, recent, onEdit, onOpenFriend
           </div>
           <div className="pp-badges">
             {shownBadges.map((b) => (
-              <div key={b.name} className={`pp-badge ${b.unlocked ? '' : 'pp-badge--locked'}`}>
-                <div className="pp-badge-icon">{b.icon}</div>
+              <div key={b.id} className={`pp-badge ${b.unlocked ? '' : 'pp-badge--locked'}`}>
+                <div className="pp-badge-icon"><BadgeIcon id={b.id} /></div>
                 <div className="pp-badge-name">{b.name}</div>
               </div>
             ))}

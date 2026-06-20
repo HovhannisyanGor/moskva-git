@@ -1,139 +1,248 @@
-import { useState } from 'react';
-import { DEMO_FRIENDS, DEMO_REQUESTS, type MockFriend } from '../data/mock';
+import { useCallback, useEffect, useState } from 'react';
+import { api, type ChatUser } from '../utils/api';
+import { Icon } from './Icon';
 
-type FriendsTab = 'all' | 'online' | 'requests';
+function avatarStyle(u: { avatar: string; color: string }) {
+  return u.avatar
+    ? { backgroundImage: `url(${u.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: u.color };
+}
 
-function FriendRow({ f }: { f: MockFriend }) {
+function Avatar({ u }: { u: ChatUser }) {
   return (
-    <div className="fr-row">
-      <span className="fr-av" style={{ background: f.color }}>
-        {f.letter}
-        {f.online && <span className="fr-online-dot" />}
-      </span>
-      <span className="fr-row-mid">
-        <span className="fr-row-name">{f.name}</span>
-        <span className="fr-row-sub">
-          @{f.handle} · {f.status}
-        </span>
-      </span>
-      <span className="fr-row-actions">
-        <button className="fr-act" type="button" title="Написать">
-          💬
-        </button>
-        <button className="fr-act" type="button" title="Маршрут вместе">
-          🗺️
-        </button>
-      </span>
-    </div>
+    <span className="fr-av" style={avatarStyle(u)}>
+      {u.avatar ? '' : u.letter}
+    </span>
   );
 }
 
-export default function FriendsPage() {
-  const [tab, setTab] = useState<FriendsTab>('all');
-  const online = DEMO_FRIENDS.filter((f) => f.online);
-  const offline = DEMO_FRIENDS.filter((f) => !f.online);
+type Tab = 'all' | 'requests';
+
+export default function FriendsPage({ onMessage }: { onMessage: (u: ChatUser) => void }) {
+  const [friends, setFriends] = useState<ChatUser[]>([]);
+  const [incoming, setIncoming] = useState<ChatUser[]>([]);
+  const [outgoing, setOutgoing] = useState<ChatUser[]>([]);
+  const [tab, setTab] = useState<Tab>('all');
+  const [adding, setAdding] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [results, setResults] = useState<ChatUser[]>([]);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await api.friends();
+      setFriends(data.friends);
+      setIncoming(data.incoming);
+      setOutgoing(data.outgoing);
+    } catch {
+      /* фоновый опрос — молча */
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 4000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  async function onSearch(q: string) {
+    setSearchQ(q);
+    const t = q.trim().replace(/^@+/, '');
+    if (t.length < 1) {
+      setResults([]);
+      return;
+    }
+    try {
+      setResults(await api.searchUsers(t));
+    } catch {
+      setResults([]);
+    }
+  }
+
+  function relationOf(id: number): 'friends' | 'outgoing' | 'incoming' | 'none' {
+    if (friends.some((u) => u.id === id)) return 'friends';
+    if (outgoing.some((u) => u.id === id)) return 'outgoing';
+    if (incoming.some((u) => u.id === id)) return 'incoming';
+    return 'none';
+  }
+
+  const add = async (u: ChatUser) => {
+    try {
+      await api.addFriend(u.id);
+      await load();
+    } catch {
+      /* ignore */
+    }
+  };
+  const accept = async (u: ChatUser) => {
+    try {
+      await api.acceptFriend(u.id);
+      await load();
+    } catch {
+      /* ignore */
+    }
+  };
+  const remove = async (u: ChatUser) => {
+    try {
+      await api.removeFriend(u.id);
+      await load();
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <div className="page-scroll">
       <div className="friends-page">
         <div className="fr-head">
           <span className="fr-title">Друзья</span>
-          <button className="fr-add" type="button">
-            + Добавить
-          </button>
-        </div>
-
-        <div className="fr-search">
-          <input placeholder="🔍 Поиск друзей..." />
-        </div>
-
-        <div className="fr-tabs">
           <button
+            className="fr-add"
             type="button"
-            className={`fr-tab ${tab === 'all' ? 'fr-tab--active' : ''}`}
-            onClick={() => setTab('all')}
+            onClick={() => {
+              setAdding((v) => !v);
+              setSearchQ('');
+              setResults([]);
+            }}
           >
-            Все ({DEMO_FRIENDS.length})
-          </button>
-          <button
-            type="button"
-            className={`fr-tab ${tab === 'online' ? 'fr-tab--active' : ''}`}
-            onClick={() => setTab('online')}
-          >
-            Онлайн ({online.length})
-          </button>
-          <button
-            type="button"
-            className={`fr-tab ${tab === 'requests' ? 'fr-tab--active' : ''}`}
-            onClick={() => setTab('requests')}
-          >
-            Запросы ({DEMO_REQUESTS.length})
+            {adding ? 'Закрыть' : '+ Добавить'}
           </button>
         </div>
 
-        <div className="fr-stats">
-          <div className="fr-stat">
-            <b>{DEMO_FRIENDS.length}</b>
-            <span>Друзей</span>
-          </div>
-          <div className="fr-stat">
-            <b>{online.length}</b>
-            <span>Онлайн</span>
-          </div>
-          <div className="fr-stat">
-            <b>12</b>
-            <span>Мест вместе</span>
-          </div>
-        </div>
-
-        {(tab === 'all' || tab === 'online') && (
+        {adding ? (
           <>
-            <div className="fr-group-label">Онлайн</div>
-            {online.map((f) => (
-              <FriendRow key={f.handle} f={f} />
-            ))}
-          </>
-        )}
-
-        {tab === 'all' && (
-          <>
-            <div className="fr-group-label">Не в сети</div>
-            {offline.map((f) => (
-              <FriendRow key={f.handle} f={f} />
-            ))}
-          </>
-        )}
-
-        {(tab === 'all' || tab === 'requests') && (
-          <>
-            <div className="fr-group-label">Входящие запросы</div>
-            {DEMO_REQUESTS.map((r) => (
-              <div className="fr-row" key={r.handle}>
-                <span className="fr-av" style={{ background: r.color }}>
-                  {r.letter}
-                </span>
-                <span className="fr-row-mid">
-                  <span className="fr-row-name">{r.name}</span>
-                  <span className="fr-row-sub">
-                    @{r.handle} · {r.mutual}
+            <div className="fr-search">
+              <input
+                placeholder="🔍 Ник, имя или ID…"
+                value={searchQ}
+                onChange={(e) => onSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+            {searchQ.trim().length >= 1 && results.length === 0 && (
+              <div className="fr-empty">Никого не нашлось</div>
+            )}
+            {results.map((u) => {
+              const rel = relationOf(u.id);
+              return (
+                <div className="fr-row" key={u.id}>
+                  <Avatar u={u} />
+                  <span className="fr-row-mid">
+                    <span className="fr-row-name">{u.name}</span>
+                    <span className="fr-row-sub">
+                      @{u.handle} · #{String(u.id).padStart(5, '0')}
+                    </span>
                   </span>
-                </span>
-                <span className="fr-req-actions">
-                  <button className="fr-req-accept" type="button" title="Принять">
-                    ✓
-                  </button>
-                  <button className="fr-req-decline" type="button" title="Отклонить">
-                    ×
-                  </button>
-                </span>
-              </div>
-            ))}
+                  <span className="fr-row-actions">
+                    {rel === 'friends' && <span className="fr-tag">в друзьях</span>}
+                    {rel === 'outgoing' && <span className="fr-tag">заявка отправлена</span>}
+                    {rel === 'incoming' && (
+                      <button className="fr-add-btn" onClick={() => accept(u)}>
+                        Принять
+                      </button>
+                    )}
+                    {rel === 'none' && (
+                      <button className="fr-add-btn" onClick={() => add(u)}>
+                        + В друзья
+                      </button>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </>
+        ) : (
+          <>
+            <div className="fr-tabs">
+              <button
+                className={`fr-tab ${tab === 'all' ? 'fr-tab--active' : ''}`}
+                onClick={() => setTab('all')}
+              >
+                Друзья ({friends.length})
+              </button>
+              <button
+                className={`fr-tab ${tab === 'requests' ? 'fr-tab--active' : ''}`}
+                onClick={() => setTab('requests')}
+              >
+                Запросы ({incoming.length})
+              </button>
+            </div>
+
+            {tab === 'all' && (
+              <>
+                {friends.length === 0 && (
+                  <div className="fr-empty">
+                    Пока нет друзей. Нажми «+ Добавить» и найди кого-нибудь по нику или ID.
+                  </div>
+                )}
+                {friends.map((u) => (
+                  <div className="fr-row" key={u.id}>
+                    <Avatar u={u} />
+                    <span className="fr-row-mid">
+                      <span className="fr-row-name">{u.name}</span>
+                      <span className="fr-row-sub">@{u.handle}</span>
+                    </span>
+                    <span className="fr-row-actions">
+                      <button className="fr-act" title="Написать" onClick={() => onMessage(u)}>
+                        <Icon name="chat" />
+                      </button>
+                      <button
+                        className="fr-act fr-act--danger"
+                        title="Удалить из друзей"
+                        onClick={() => remove(u)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {tab === 'requests' && (
+              <>
+                <div className="fr-group-label">Входящие</div>
+                {incoming.length === 0 && <div className="fr-empty">Входящих заявок нет</div>}
+                {incoming.map((u) => (
+                  <div className="fr-row" key={u.id}>
+                    <Avatar u={u} />
+                    <span className="fr-row-mid">
+                      <span className="fr-row-name">{u.name}</span>
+                      <span className="fr-row-sub">@{u.handle}</span>
+                    </span>
+                    <span className="fr-req-actions">
+                      <button className="fr-req-accept" title="Принять" onClick={() => accept(u)}>
+                        ✓
+                      </button>
+                      <button className="fr-req-decline" title="Отклонить" onClick={() => remove(u)}>
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                ))}
+
+                {outgoing.length > 0 && (
+                  <>
+                    <div className="fr-group-label">Исходящие</div>
+                    {outgoing.map((u) => (
+                      <div className="fr-row" key={u.id}>
+                        <Avatar u={u} />
+                        <span className="fr-row-mid">
+                          <span className="fr-row-name">{u.name}</span>
+                          <span className="fr-row-sub">@{u.handle}</span>
+                        </span>
+                        <span className="fr-row-actions">
+                          <button className="fr-act" title="Отменить заявку" onClick={() => remove(u)}>
+                            Отменить
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </>
         )}
-
-        <button className="fr-find" type="button">
-          Найти друзей по нику или email
-        </button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import type { Visit } from '../types';
 import { BADGES } from '../data/badges';
 import { PLACES, CATEGORY_LABELS, CATEGORY_COLORS } from '../data/places';
+import { BadgeIcon } from './Icon';
 
 interface AchievementsPageProps {
   visits: Visit[];
@@ -34,7 +35,7 @@ export default function AchievementsPage({ visits, unlockedBadges, onPlaceClick 
               const unlocked = unlockedBadges.includes(badge.id);
               return (
                 <div key={badge.id} className={`badge-card ${unlocked ? 'badge-card--unlocked' : 'badge-card--locked'}`}>
-                  <div className="badge-icon">{badge.icon}</div>
+                  <div className="badge-icon"><BadgeIcon id={badge.id} /></div>
                   <div className="badge-info">
                     <div className="badge-title">{badge.title}</div>
                     <div className="badge-desc">{badge.description}</div>
