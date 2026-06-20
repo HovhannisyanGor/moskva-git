@@ -261,7 +261,7 @@ export default function App() {
           />
         );
       case 'chats':
-        return <ChatsPage onActiveChatChange={setActiveChatUser} />;
+        return <ChatsPage onActiveChatChange={setActiveChatUser} meName={displayUser.name} />;
       case 'friends':
         return <FriendsPage />;
       case 'admin':

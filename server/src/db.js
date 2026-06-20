@@ -66,5 +66,17 @@ db.exec(`
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, recipient_id)');
 
+// Миграции сообщений: редактирование, ответы (reply_to) и пересылка (forwarded_from).
+const msgCols = db.prepare('PRAGMA table_info(messages)').all();
+if (!msgCols.some((c) => c.name === 'edited')) {
+  db.exec('ALTER TABLE messages ADD COLUMN edited INTEGER NOT NULL DEFAULT 0');
+}
+if (!msgCols.some((c) => c.name === 'reply_to')) {
+  db.exec('ALTER TABLE messages ADD COLUMN reply_to INTEGER'); // id сообщения-оригинала (или NULL)
+}
+if (!msgCols.some((c) => c.name === 'forwarded_from')) {
+  db.exec("ALTER TABLE messages ADD COLUMN forwarded_from TEXT NOT NULL DEFAULT ''"); // имя автора при пересылке
+}
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

@@ -35,9 +35,10 @@ function avatarStyle(u: { avatar: string; color: string }) {
 
 interface ChatsPageProps {
   onActiveChatChange?: (userId: number | null) => void;
+  meName?: string; // имя текущего пользователя — для пометки «Переслано от …»
 }
 
-export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
+export default function ChatsPage({ onActiveChatChange, meName = '' }: ChatsPageProps) {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
@@ -49,7 +50,16 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
   const [newChat, setNewChat] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [results, setResults] = useState<ChatUser[]>([]);
+
+  // Действия с сообщениями
+  const [menuMsg, setMenuMsg] = useState<ChatMessageItem | null>(null); // открытое меню действий
+  const [replyTo, setReplyTo] = useState<ChatMessageItem | null>(null); // на что отвечаем
+  const [editing, setEditing] = useState<ChatMessageItem | null>(null); // что редактируем
+  const [forwarding, setForwarding] = useState<ChatMessageItem | null>(null); // что пересылаем
+  const [toast, setToast] = useState('');
+
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<number | null>(null);
 
   const loadChats = useCallback(async () => {
@@ -72,14 +82,15 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
     }
   }, []);
 
-  // Список чатов: загрузка + опрос раз в 3 сек.
+  // Список чатов: загрузка + опрос раз в 2.5 сек.
   useEffect(() => {
     loadChats();
     const t = setInterval(loadChats, 2500);
     return () => clearInterval(t);
   }, [loadChats]);
 
-  // Сообщения активного чата: загрузка + опрос раз в 3 сек.
+  // Сообщения активного чата: загрузка + опрос. Во время правки/ответа не дёргаем,
+  // чтобы опрос не перетирал то, что пользователь сейчас делает.
   useEffect(() => {
     activeIdRef.current = activeUserId;
     if (activeUserId == null) return;
@@ -87,7 +98,7 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
     loadMessages(activeUserId).finally(() => {
       if (activeIdRef.current === activeUserId) setLoading(false);
     });
-    const t = setInterval(() => loadMessages(activeUserId), 1200);
+    const t = setInterval(() => loadMessages(activeUserId), 1500);
     return () => clearInterval(t);
   }, [activeUserId, loadMessages]);
 
@@ -102,6 +113,13 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
     return () => onActiveChatChange?.(null);
   }, [activeUserId, onActiveChatChange]);
 
+  // Короткое уведомление («Скопировано» и т.п.) — само прячется.
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(''), 1800);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   function openChat(user: ChatUser) {
     setActiveUserId(user.id);
     setActiveUser(user);
@@ -110,6 +128,9 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
     setNewChat(false);
     setSearchQ('');
     setResults([]);
+    setReplyTo(null);
+    setEditing(null);
+    setInput('');
   }
 
   async function onSearch(q: string) {
@@ -130,8 +151,15 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
     if (!text || activeUserId == null || sending) return;
     setSending(true);
     try {
-      const msg = await api.chatSend(activeUserId, text);
-      setMessages((prev) => [...prev, msg]);
+      if (editing) {
+        const updated = await api.chatEditMessage(editing.id, text);
+        setMessages((prev) => prev.map((x) => (x.id === editing.id ? updated : x)));
+        setEditing(null);
+      } else {
+        const msg = await api.chatSend(activeUserId, text, replyTo ? { replyTo: replyTo.id } : {});
+        setMessages((prev) => [...prev, msg]);
+        setReplyTo(null);
+      }
       setInput('');
       loadChats();
     } catch {
@@ -139,6 +167,64 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
     } finally {
       setSending(false);
     }
+  }
+
+  // --- Действия из меню ---
+  function startReply(m: ChatMessageItem) {
+    setEditing(null);
+    setReplyTo(m);
+    setMenuMsg(null);
+    inputRef.current?.focus();
+  }
+  function startEdit(m: ChatMessageItem) {
+    setReplyTo(null);
+    setEditing(m);
+    setInput(m.text);
+    setMenuMsg(null);
+    inputRef.current?.focus();
+  }
+  async function copyMsg(m: ChatMessageItem) {
+    setMenuMsg(null);
+    try {
+      await navigator.clipboard.writeText(m.text);
+      setToast('Скопировано');
+    } catch {
+      setToast('Не удалось скопировать');
+    }
+  }
+  async function deleteMsg(m: ChatMessageItem) {
+    setMenuMsg(null);
+    if (!window.confirm('Удалить сообщение? Действие необратимо.')) return;
+    try {
+      await api.chatDeleteMessage(m.id);
+      setMessages((prev) => prev.filter((x) => x.id !== m.id));
+      if (replyTo?.id === m.id) setReplyTo(null);
+      if (editing?.id === m.id) {
+        setEditing(null);
+        setInput('');
+      }
+      loadChats();
+    } catch {
+      setToast('Не удалось удалить');
+    }
+  }
+  // Пересылка: открываем выбор чата, затем отправляем туда текст с пометкой автора.
+  async function forwardTo(target: ChatUser) {
+    if (!forwarding) return;
+    const author = forwarding.fromMe ? meName : activeUser?.name || '';
+    try {
+      await api.chatSend(target.id, forwarding.text, { forwardedFrom: author });
+      setForwarding(null);
+      openChat(target);
+    } catch {
+      setToast('Не удалось переслать');
+    }
+  }
+
+  function cancelEditReply() {
+    setEditing(null);
+    setReplyTo(null);
+    setInput('');
   }
 
   return (
@@ -171,9 +257,7 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
               />
             </div>
             <div className="chats-items">
-              {searchQ.trim().length < 1 && (
-                <div className="chats-empty">Введи ник, имя или ID</div>
-              )}
+              {searchQ.trim().length < 1 && <div className="chats-empty">Введи ник, имя или ID</div>}
               {searchQ.trim().length >= 1 && results.length === 0 && (
                 <div className="chats-empty">Никого не нашлось</div>
               )}
@@ -260,8 +344,6 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
                 const prev = messages[i - 1];
                 const next = messages[i + 1];
                 const showDay = !prev || dayKey(prev.createdAt) !== dayKey(m.createdAt);
-                // Группировка: подряд идущие сообщения одного автора в один день идут
-                // плотнее, а время показываем только у последнего в группе.
                 const sameAsPrev = !showDay && !!prev && prev.fromMe === m.fromMe;
                 const sameAsNext =
                   !!next && next.fromMe === m.fromMe && dayKey(next.createdAt) === dayKey(m.createdAt);
@@ -271,8 +353,29 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
                     <div
                       className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}${sameAsPrev ? ' chat-msg--grouped' : ''}`}
                     >
-                      <div className="chat-bubble">{m.text}</div>
-                      {!sameAsNext && <div className="chat-msg-time">{timeShort(m.createdAt)}</div>}
+                      <button
+                        type="button"
+                        className="chat-bubble"
+                        onClick={() => setMenuMsg(m)}
+                        title="Действия с сообщением"
+                      >
+                        {m.forwardedFrom && (
+                          <span className="chat-fwd">↪ Переслано от {m.forwardedFrom}</span>
+                        )}
+                        {m.replyTo && (
+                          <span className="chat-quote">
+                            <span className="chat-quote-author">{m.replyTo.fromMe ? 'Вы' : activeUser.name}</span>
+                            <span className="chat-quote-text">{m.replyTo.text}</span>
+                          </span>
+                        )}
+                        <span className="chat-bubble-text">{m.text}</span>
+                      </button>
+                      {!sameAsNext && (
+                        <div className="chat-msg-time">
+                          {m.edited && <span className="chat-edited">изменено</span>}
+                          {timeShort(m.createdAt)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -280,17 +383,41 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
               <div ref={endRef} />
             </div>
 
+            {/* Баннер ответа / редактирования над полем ввода */}
+            {(replyTo || editing) && (
+              <div className="chat-compose-banner">
+                <span className="chat-compose-ic">{editing ? '✎' : '↩'}</span>
+                <span className="chat-compose-body">
+                  <span className="chat-compose-title">
+                    {editing ? 'Редактирование' : `Ответ ${replyTo!.fromMe ? 'себе' : activeUser.name}`}
+                  </span>
+                  <span className="chat-compose-text">{(editing || replyTo)!.text}</span>
+                </span>
+                <button className="chat-compose-x" type="button" onClick={cancelEditReply} aria-label="Отмена">
+                  ×
+                </button>
+              </div>
+            )}
+
             <div className="chat-input">
               <input
-                placeholder="Сообщение..."
+                ref={inputRef}
+                placeholder={editing ? 'Изменить сообщение…' : 'Сообщение...'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') send();
+                  if (e.key === 'Escape') cancelEditReply();
                 }}
               />
-              <button className="chat-send" type="button" onClick={send} disabled={sending || !input.trim()}>
-                ➤
+              <button
+                className="chat-send"
+                type="button"
+                onClick={send}
+                disabled={sending || !input.trim()}
+                aria-label={editing ? 'Сохранить' : 'Отправить'}
+              >
+                {editing ? '✓' : '➤'}
               </button>
             </div>
           </>
@@ -298,6 +425,68 @@ export default function ChatsPage({ onActiveChatChange }: ChatsPageProps) {
           <div className="chat-empty-view">Выбери чат или начни новый кнопкой «+»</div>
         )}
       </section>
+
+      {/* Меню действий с сообщением */}
+      {menuMsg && (
+        <>
+          <div className="msg-menu-backdrop" onClick={() => setMenuMsg(null)} />
+          <div className="msg-menu" role="menu">
+            <div className="msg-menu-preview">{menuMsg.text}</div>
+            <button type="button" className="msg-menu-item" onClick={() => startReply(menuMsg)}>
+              <span className="msg-menu-ic">↩</span> Ответить
+            </button>
+            <button type="button" className="msg-menu-item" onClick={() => copyMsg(menuMsg)}>
+              <span className="msg-menu-ic">⧉</span> Копировать
+            </button>
+            <button type="button" className="msg-menu-item" onClick={() => { setForwarding(menuMsg); setMenuMsg(null); }}>
+              <span className="msg-menu-ic">↪</span> Переслать
+            </button>
+            {menuMsg.fromMe && (
+              <button type="button" className="msg-menu-item" onClick={() => startEdit(menuMsg)}>
+                <span className="msg-menu-ic">✎</span> Изменить
+              </button>
+            )}
+            {menuMsg.fromMe && (
+              <button type="button" className="msg-menu-item msg-menu-item--danger" onClick={() => deleteMsg(menuMsg)}>
+                <span className="msg-menu-ic">🗑</span> Удалить
+              </button>
+            )}
+            <button type="button" className="msg-menu-cancel" onClick={() => setMenuMsg(null)}>
+              Отмена
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Выбор чата для пересылки */}
+      {forwarding && (
+        <>
+          <div className="msg-menu-backdrop" onClick={() => setForwarding(null)} />
+          <div className="fwd-picker">
+            <div className="fwd-picker-head">
+              <span>Переслать в чат</span>
+              <button type="button" onClick={() => setForwarding(null)} aria-label="Закрыть">×</button>
+            </div>
+            <div className="fwd-picker-preview">«{forwarding.text}»</div>
+            <div className="fwd-picker-list">
+              {chats.length === 0 && <div className="chats-empty">Нет доступных чатов</div>}
+              {chats.map((c) => (
+                <button key={c.user.id} type="button" className="chat-item" onClick={() => forwardTo(c.user)}>
+                  <span className="chat-av chat-av--sm" style={avatarStyle(c.user)}>
+                    {c.user.avatar ? '' : c.user.letter}
+                  </span>
+                  <span className="chat-item-mid">
+                    <span className="chat-item-name">{c.user.name}</span>
+                    <span className="chat-item-last">@{c.user.handle}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {toast && <div className="chat-mini-toast">{toast}</div>}
     </div>
   );
 }

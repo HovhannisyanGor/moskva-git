@@ -67,11 +67,19 @@ export interface ChatListItem {
   last: { text: string; fromMe: boolean; createdAt: string } | null;
   unread: number;
 }
+export interface ReplyPreview {
+  id: number;
+  text: string;
+  fromMe: boolean;
+}
 export interface ChatMessageItem {
   id: number;
   fromMe: boolean;
   text: string;
   createdAt: string;
+  edited: boolean;
+  forwardedFrom: string; // имя автора при пересылке ('' — обычное сообщение)
+  replyTo: ReplyPreview | null;
 }
 
 // Универсальный запрос: добавляет токен (если нужно), разбирает JSON,
@@ -150,13 +158,31 @@ export const api = {
       { auth: true },
     );
   },
-  async chatSend(userId: number, text: string) {
+  async chatSend(
+    userId: number,
+    text: string,
+    opts: { replyTo?: number; forwardedFrom?: string } = {},
+  ) {
     const data = await request<{ message: ChatMessageItem }>(`/api/chats/${userId}/messages`, {
       method: 'POST',
+      body: { text, replyTo: opts.replyTo, forwardedFrom: opts.forwardedFrom },
+      auth: true,
+    });
+    return data.message;
+  },
+  async chatEditMessage(id: number, text: string) {
+    const data = await request<{ message: ChatMessageItem }>(`/api/chats/messages/${id}`, {
+      method: 'PATCH',
       body: { text },
       auth: true,
     });
     return data.message;
+  },
+  async chatDeleteMessage(id: number) {
+    return request<{ ok: boolean; deleted: number }>(`/api/chats/messages/${id}`, {
+      method: 'DELETE',
+      auth: true,
+    });
   },
   async searchUsers(q: string) {
     const data = await request<{ users: ChatUser[] }>(
