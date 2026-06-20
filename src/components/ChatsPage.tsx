@@ -33,7 +33,13 @@ function avatarStyle(u: { avatar: string; color: string }) {
     : { background: u.color };
 }
 
-export default function ChatsPage() {
+export default function ChatsPage({
+  openWith = null,
+  onOpenedWith,
+}: {
+  openWith?: ChatUser | null;
+  onOpenedWith?: () => void;
+}) {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
@@ -91,6 +97,15 @@ export default function ChatsPage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, activeUserId]);
+
+  // Открыть конкретный диалог снаружи (например, кнопка «Написать» у друга).
+  useEffect(() => {
+    if (openWith) {
+      openChat(openWith);
+      onOpenedWith?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openWith?.id]);
 
   function openChat(user: ChatUser) {
     setActiveUserId(user.id);

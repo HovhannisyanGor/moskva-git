@@ -19,7 +19,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { useTheme } from './hooks/useTheme';
 import type { Place, Route, View } from './types';
 import { PLACES } from './data/places';
-import { api, getToken, clearToken, type ApiUser } from './utils/api';
+import { api, getToken, clearToken, type ApiUser, type ChatUser } from './utils/api';
 import { buildDisplayUser, displayBadges, recentPlaces } from './utils/profile';
 import './App.css';
 
@@ -31,7 +31,7 @@ const ICON = {
   ),
   trophy: (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" />
+      <path d="M8 21l8 0" /><path d="M12 17l0 4" /><path d="M7 4l10 0" /><path d="M17 4v8a5 5 0 0 1 -10 0v-8" /><path d="M3 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
     </svg>
   ),
   friends: (
@@ -41,7 +41,7 @@ const ICON = {
   ),
   chats: (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12Z" />
+      <path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1" />
     </svg>
   ),
   user: (
@@ -70,6 +70,8 @@ export default function App() {
   // Состояние «гостя» (пока не вошёл): сначала лендинг, потом экран входа.
   const [authView, setAuthView] = useState<'landing' | 'auth'>('landing');
   const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
+  // Какой диалог открыть в чатах (например, по кнопке «Написать» у друга).
+  const [chatWith, setChatWith] = useState<ChatUser | null>(null);
 
   // При загрузке: если есть сохранённый токен — проверяем его и подтягиваем профиль.
   useEffect(() => {
@@ -177,6 +179,20 @@ export default function App() {
     setDragH(null);
   }, []);
 
+  const openChatWith = useCallback((u: ChatUser) => {
+    setChatWith(u);
+    setActiveView('chats');
+    setSnap(0);
+    setDragH(null);
+  }, []);
+
+  const openPlace = useCallback((p: Place) => {
+    setSelectedPlace(p);
+    setActiveView('map');
+    setSnap(0);
+    setDragH(null);
+  }, []);
+
   const handleAchievementPlaceClick = useCallback((placeId: number) => {
     const place = PLACES.find((p) => p.id === placeId);
     if (place) {
@@ -256,9 +272,9 @@ export default function App() {
           />
         );
       case 'chats':
-        return <ChatsPage />;
+        return <ChatsPage openWith={chatWith} onOpenedWith={() => setChatWith(null)} />;
       case 'friends':
-        return <FriendsPage />;
+        return <FriendsPage onMessage={openChatWith} />;
       case 'admin':
         // Вход в админку показан только админам, и сервер всё равно проверяет роль.
         // Если сюда как-то попал не-админ — просто ничего не рендерим.
@@ -358,6 +374,8 @@ export default function App() {
           user={displayUser}
           isAdmin={isAdmin}
           onLogout={handleLogout}
+          onOpenChat={openChatWith}
+          onOpenPlace={openPlace}
         />
       )}
 

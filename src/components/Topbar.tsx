@@ -1,7 +1,10 @@
 import { useTheme } from '../hooks/useTheme';
-import type { View } from '../types';
+import type { Place, View } from '../types';
 import type { DisplayUser } from '../utils/profile';
+import type { ChatUser } from '../utils/api';
 import ProfileMenu from './ProfileMenu';
+import TopSearch from './TopSearch';
+import { Icon } from './Icon';
 
 interface TopbarProps {
   activeView: View;
@@ -9,15 +12,25 @@ interface TopbarProps {
   user: DisplayUser;
   isAdmin: boolean;
   onLogout: () => void;
+  onOpenChat: (u: ChatUser) => void;
+  onOpenPlace: (p: Place) => void;
 }
 
-const NAV: { view: View; label: string }[] = [
+const NAV: { view: View; label: string; icon?: string }[] = [
   { view: 'map', label: 'Карта' },
-  { view: 'achievements', label: '🏅 Достижения' },
-  { view: 'chats', label: '💬 Чаты' },
+  { view: 'achievements', label: 'Достижения', icon: 'trophy' },
+  { view: 'chats', label: 'Чаты', icon: 'chat' },
 ];
 
-export default function Topbar({ activeView, onNavigate, user, isAdmin, onLogout }: TopbarProps) {
+export default function Topbar({
+  activeView,
+  onNavigate,
+  user,
+  isAdmin,
+  onLogout,
+  onOpenChat,
+  onOpenPlace,
+}: TopbarProps) {
   const { mode, setMode, effective } = useTheme();
 
   return (
@@ -37,6 +50,8 @@ export default function Topbar({ activeView, onNavigate, user, isAdmin, onLogout
         <span className="logo-tagline">— исследуй город умно</span>
       </button>
 
+      <TopSearch onOpenChat={onOpenChat} onOpenPlace={onOpenPlace} />
+
       <nav className="topbar-nav">
         {NAV.map((n) => (
           <button
@@ -44,6 +59,7 @@ export default function Topbar({ activeView, onNavigate, user, isAdmin, onLogout
             className={`nav-btn ${activeView === n.view ? 'nav-btn--active' : ''}`}
             onClick={() => onNavigate(n.view)}
           >
+            {n.icon && <Icon name={n.icon} className="nav-btn-icon" />}
             {n.label}
           </button>
         ))}
