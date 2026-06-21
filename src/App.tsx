@@ -11,10 +11,12 @@ import ProfilePage from './components/ProfilePage';
 import EditProfilePage from './components/EditProfilePage';
 import ChatsPage from './components/ChatsPage';
 import FriendsPage from './components/FriendsPage';
+import FavoritesPage from './components/FavoritesPage';
 import AdminPage from './components/AdminPage';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
 import { useAchievements } from './hooks/useAchievements';
+import { useFavorites } from './hooks/useFavorites';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useTheme } from './hooks/useTheme';
 import { useChatNotifications } from './hooks/useChatNotifications';
@@ -65,6 +67,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<View>('map');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const { visits, unlockedBadges, isVisited, toggleVisit, newBadge, resetAchievements } = useAchievements();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -287,6 +290,8 @@ export default function App() {
         );
       case 'friends':
         return <FriendsPage onMessage={openChatWith} />;
+      case 'favorites':
+        return <FavoritesPage favorites={favorites} onPlaceClick={handleAchievementPlaceClick} />;
       case 'admin':
         // Вход в админку показан только админам, и сервер всё равно проверяет роль.
         // Если сюда как-то попал не-админ — просто ничего не рендерим.
@@ -346,6 +351,8 @@ export default function App() {
                   onClose={() => setSelectedPlace(null)}
                   isVisited={isVisited(selectedPlace.id)}
                   onToggleVisit={toggleVisit}
+                  isFavorite={isFavorite(selectedPlace.id)}
+                  onToggleFavorite={toggleFavorite}
                 />
               )}
 

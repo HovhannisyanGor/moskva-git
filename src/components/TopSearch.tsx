@@ -101,6 +101,7 @@ export default function TopSearch({
                     }
                   >
                     {u.avatar ? '' : u.letter}
+                    {u.online && <span className="fr-online-dot" />}
                   </span>
                   <span className="top-search-row-mid">
                     <span className="top-search-row-name">{u.name}</span>

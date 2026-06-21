@@ -7,6 +7,8 @@ interface PlaceModalProps {
   onClose: () => void;
   isVisited?: boolean;
   onToggleVisit?: (placeId: number) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (placeId: number) => void;
 }
 
 const FALLBACK_IMAGES: Record<string, string> = {
@@ -28,7 +30,7 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function PlaceModal({ place, onClose, isVisited, onToggleVisit }: PlaceModalProps) {
+export default function PlaceModal({ place, onClose, isVisited, onToggleVisit, isFavorite, onToggleFavorite }: PlaceModalProps) {
   const [closing, setClosing] = useState(false);
   const close = () => {
     setClosing(true);
@@ -51,6 +53,16 @@ export default function PlaceModal({ place, onClose, isVisited, onToggleVisit }:
             onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMAGES[place.category]; }}
           />
           <button className="modal-close" onClick={close} aria-label="Закрыть">✕</button>
+          {onToggleFavorite && (
+            <button
+              className={`modal-fav${isFavorite ? ' modal-fav--on' : ''}`}
+              onClick={() => onToggleFavorite(place.id)}
+              aria-label={isFavorite ? 'Убрать из избранного' : 'В избранное'}
+              title={isFavorite ? 'В избранном' : 'В избранное'}
+            >
+              {isFavorite ? '★' : '☆'}
+            </button>
+          )}
           <div className="modal-category-badge" style={{ background: color }}>
             {CATEGORY_LABELS[place.category]}
           </div>

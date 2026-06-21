@@ -12,6 +12,7 @@ function Avatar({ u }: { u: ChatUser }) {
   return (
     <span className="fr-av" style={avatarStyle(u)}>
       {u.avatar ? '' : u.letter}
+      {u.online && <span className="fr-online-dot" />}
     </span>
   );
 }

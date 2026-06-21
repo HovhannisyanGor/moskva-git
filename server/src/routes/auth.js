@@ -8,6 +8,37 @@ export const authRouter = Router();
 // Палитра цветов для аватарок — назначаем новому пользователю случайный цвет.
 const COLORS = ['#FA3C3C', '#378ADD', '#3FAE6E', '#9B7FE6', '#D69A1E', '#E0568A'];
 
+// --- Защита входа от перебора паролей (простой in-memory rate-limit по IP) ---
+const loginAttempts = new Map(); // ip -> { count, first, blockedUntil }
+const MAX_LOGIN_ATTEMPTS = 6; // столько неверных попыток в окне — и блок
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // окно подсчёта
+const LOGIN_BLOCK_MS = 15 * 60 * 1000; // на сколько блокируем
+
+function loginRateKey(req) {
+  return String(req.ip || req.headers['x-forwarded-for'] || 'unknown');
+}
+function loginBlockedMinutes(req) {
+  const rec = loginAttempts.get(loginRateKey(req));
+  if (rec?.blockedUntil && rec.blockedUntil > Date.now())
+    return Math.ceil((rec.blockedUntil - Date.now()) / 60000);
+  return 0;
+}
+function noteFailedLogin(req) {
+  const key = loginRateKey(req);
+  const now = Date.now();
+  const rec = loginAttempts.get(key) || { count: 0, first: now };
+  if (now - rec.first > LOGIN_WINDOW_MS) {
+    rec.count = 0;
+    rec.first = now;
+  }
+  rec.count += 1;
+  if (rec.count >= MAX_LOGIN_ATTEMPTS) rec.blockedUntil = now + LOGIN_BLOCK_MS;
+  loginAttempts.set(key, rec);
+}
+function clearLoginAttempts(req) {
+  loginAttempts.delete(loginRateKey(req));
+}
+
 // POST /api/auth/register — регистрация нового пользователя.
 authRouter.post('/register', (req, res) => {
   // Приводим к строке и убираем пробелы по краям — чтобы кривой ввод не ронял сервер.
@@ -65,6 +96,13 @@ authRouter.post('/register', (req, res) => {
 
 // POST /api/auth/login — вход по email и паролю.
 authRouter.post('/login', (req, res) => {
+  // Слишком много неудачных попыток с этого IP — временно не пускаем.
+  const blockedMins = loginBlockedMinutes(req);
+  if (blockedMins > 0)
+    return res
+      .status(429)
+      .json({ error: `Слишком много попыток входа. Попробуйте через ${blockedMins} мин.` });
+
   const email = String(req.body?.email ?? '').trim().toLowerCase();
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
   if (!email || !password)
@@ -74,9 +112,12 @@ authRouter.post('/login', (req, res) => {
 
   // Ответ одинаковый и при неверном email, и при неверном пароле —
   // чтобы не подсказывать злоумышленнику, какой email зарегистрирован.
-  if (!user || !verifyPassword(password, user.password_hash))
+  if (!user || !verifyPassword(password, user.password_hash)) {
+    noteFailedLogin(req);
     return res.status(401).json({ error: 'Неверный email или пароль' });
+  }
 
+  clearLoginAttempts(req); // успешный вход — сбрасываем счётчик
   syncAdminRole(user); // email мог попасть в ADMIN_EMAILS уже после регистрации
   const token = signToken(user);
   res.json({ token, user: toPublicUser(user) });

@@ -12,6 +12,7 @@ import { friendsRouter } from './routes/friends.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
+app.set('trust proxy', 1); // за nginx берём реальный IP клиента (нужно для rate-limit входа)
 
 app.use(cors({ origin: config.corsOrigin })); // разрешаем фронту обращаться к API
 app.use(express.json()); // учим сервер читать JSON из тела запроса

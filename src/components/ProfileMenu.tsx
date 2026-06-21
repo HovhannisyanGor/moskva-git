@@ -204,13 +204,13 @@ export default function ProfileMenu({
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
-                <button className="profile-menu-item" type="button">
+                <button className="profile-menu-item" type="button" onClick={() => go('favorites')}>
                   <span className="profile-menu-icon">⭐</span>
                   <span className="profile-menu-text">
                     <span className="profile-menu-title">Избранное</span>
                     <span className="profile-menu-sub">Сохранённые места</span>
                   </span>
-                  <span className="profile-soon">скоро</span>
+                  <span className="profile-menu-arrow">›</span>
                 </button>
                 <button className="profile-menu-item" type="button" onClick={() => go('friends')}>
                   <span className="profile-menu-icon">🤝</span>
