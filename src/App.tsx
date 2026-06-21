@@ -12,6 +12,8 @@ import EditProfilePage from './components/EditProfilePage';
 import ChatsPage from './components/ChatsPage';
 import FriendsPage from './components/FriendsPage';
 import FavoritesPage from './components/FavoritesPage';
+import UserProfilePage from './components/UserProfilePage';
+import SettingsPage from './components/SettingsPage';
 import AdminPage from './components/AdminPage';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
@@ -78,6 +80,8 @@ export default function App() {
   const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
   // Какой диалог открыть в чатах (например, по кнопке «Написать» у друга).
   const [chatWith, setChatWith] = useState<ChatUser | null>(null);
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
+  const [prevView, setPrevView] = useState<View>('map');
 
   // При загрузке: если есть сохранённый токен — проверяем его и подтягиваем профиль.
   useEffect(() => {
@@ -201,6 +205,17 @@ export default function App() {
     setDragH(null);
   }, []);
 
+  const openUserProfile = useCallback(
+    (id: number) => {
+      setPrevView(activeView);
+      setProfileUserId(id);
+      setActiveView('user');
+      setSnap(0);
+      setDragH(null);
+    },
+    [activeView],
+  );
+
   const handleAchievementPlaceClick = useCallback((placeId: number) => {
     const place = PLACES.find((p) => p.id === placeId);
     if (place) {
@@ -286,12 +301,27 @@ export default function App() {
             meName={displayUser.name}
             openWith={chatWith}
             onOpenedWith={() => setChatWith(null)}
+            onOpenProfile={openUserProfile}
           />
         );
       case 'friends':
-        return <FriendsPage onMessage={openChatWith} />;
+        return <FriendsPage onMessage={openChatWith} onOpenProfile={openUserProfile} />;
       case 'favorites':
         return <FavoritesPage favorites={favorites} onPlaceClick={handleAchievementPlaceClick} />;
+      case 'user':
+        return profileUserId != null ? (
+          <UserProfilePage userId={profileUserId} onBack={() => navigate(prevView)} onMessage={openChatWith} />
+        ) : null;
+      case 'settings':
+        return currentUser ? (
+          <SettingsPage
+            user={currentUser}
+            onSavedUser={setCurrentUser}
+            onBack={() => navigate('profile')}
+            themeMode={theme.mode}
+            onThemeChange={theme.setMode}
+          />
+        ) : null;
       case 'admin':
         // Вход в админку показан только админам, и сервер всё равно проверяет роль.
         // Если сюда как-то попал не-админ — просто ничего не рендерим.
@@ -394,7 +424,7 @@ export default function App() {
           isAdmin={isAdmin}
           chatsUnread={totalUnread}
           onLogout={handleLogout}
-          onOpenChat={openChatWith}
+          onOpenProfile={openUserProfile}
           onOpenPlace={openPlace}
         />
       )}

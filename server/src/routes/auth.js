@@ -145,6 +145,7 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   const letter = b.letter !== undefined ? String(b.letter).trim().slice(0, 2) : user.letter;
   const handle = b.handle !== undefined ? String(b.handle).trim() : user.handle;
   const avatar = b.avatar !== undefined ? String(b.avatar) : user.avatar;
+  const showOnline = b.show_online !== undefined ? (b.show_online ? 1 : 0) : user.show_online;
 
   if (!name) return res.status(400).json({ error: 'Имя не может быть пустым' });
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(handle))
@@ -157,8 +158,8 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   if (db.prepare('SELECT 1 FROM users WHERE handle = ? AND id != ?').get(handle, req.userId))
     return res.status(409).json({ error: 'Этот ник уже занят' });
 
-  db.prepare('UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ? WHERE id = ?')
-    .run(name, bio, city, color, letter, handle, avatar, req.userId);
+  db.prepare('UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ?, show_online = ? WHERE id = ?')
+    .run(name, bio, city, color, letter, handle, avatar, showOnline, req.userId);
 
   const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: toPublicUser(updated) });

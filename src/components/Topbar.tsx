@@ -1,7 +1,6 @@
 import { useTheme } from '../hooks/useTheme';
 import type { Place, View } from '../types';
 import type { DisplayUser } from '../utils/profile';
-import type { ChatUser } from '../utils/api';
 import ProfileMenu from './ProfileMenu';
 import TopSearch from './TopSearch';
 import { Icon } from './Icon';
@@ -13,7 +12,7 @@ interface TopbarProps {
   isAdmin: boolean;
   chatsUnread?: number;
   onLogout: () => void;
-  onOpenChat: (u: ChatUser) => void;
+  onOpenProfile: (id: number) => void;
   onOpenPlace: (p: Place) => void;
 }
 
@@ -30,7 +29,7 @@ export default function Topbar({
   isAdmin,
   chatsUnread = 0,
   onLogout,
-  onOpenChat,
+  onOpenProfile,
   onOpenPlace,
 }: TopbarProps) {
   const { mode, setMode, effective } = useTheme();
@@ -52,7 +51,7 @@ export default function Topbar({
         <span className="logo-tagline">— исследуй город умно</span>
       </button>
 
-      <TopSearch onOpenChat={onOpenChat} onOpenPlace={onOpenPlace} />
+      <TopSearch onOpenProfile={onOpenProfile} onOpenPlace={onOpenPlace} />
 
       <nav className="topbar-nav">
         {NAV.map((n) => (

@@ -28,8 +28,24 @@ export interface ApiUser {
   city: string;
   avatar: string;
   role: 'user' | 'admin';
+  show_online: number; // 1 = показывать «в сети» другим (приватность)
   created_at: string;
 }
+
+// Публичный профиль другого пользователя (по нику/ID).
+export interface PublicUser {
+  id: number;
+  name: string;
+  handle: string;
+  color: string;
+  letter: string;
+  avatar: string;
+  online: boolean;
+  bio: string;
+  city: string;
+  createdAt: string;
+}
+export type Relation = 'self' | 'friends' | 'incoming' | 'outgoing' | 'none';
 
 // --- Админка ---
 export interface AdminUser {
@@ -138,7 +154,7 @@ export const api = {
     return data.user;
   },
 
-  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar'>>) {
+  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar' | 'show_online'>>) {
     const data = await request<{ user: ApiUser }>('/api/auth/me', {
       method: 'PATCH',
       body: patch,
@@ -190,6 +206,9 @@ export const api = {
       { auth: true },
     );
     return data.users;
+  },
+  async userProfile(id: number) {
+    return request<{ user: PublicUser; relation: Relation }>(`/api/users/${id}`, { auth: true });
   },
 
   // --- Друзья ---

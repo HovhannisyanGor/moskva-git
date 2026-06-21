@@ -40,6 +40,7 @@ export function toChatUser(row) {
     color: row.color,
     letter: row.letter,
     avatar: row.avatar || '',
-    online: isOnline(row),
+    // Если пользователь скрыл свой онлайн (приватность) — показываем «не в сети».
+    online: row.show_online === 0 ? false : isOnline(row),
   };
 }

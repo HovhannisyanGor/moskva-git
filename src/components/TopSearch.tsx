@@ -6,10 +6,10 @@ import { Icon } from './Icon';
 
 // Универсальный поиск сверху: люди (через API) + места (по списку PLACES).
 export default function TopSearch({
-  onOpenChat,
+  onOpenProfile,
   onOpenPlace,
 }: {
-  onOpenChat: (u: ChatUser) => void;
+  onOpenProfile: (id: number) => void;
   onOpenPlace: (p: Place) => void;
 }) {
   const [q, setQ] = useState('');
@@ -60,7 +60,7 @@ export default function TopSearch({
     setOpen(false);
   }
   function choosePerson(u: ChatUser) {
-    onOpenChat(u);
+    onOpenProfile(u.id);
     reset();
   }
   function choosePlace(p: Place) {

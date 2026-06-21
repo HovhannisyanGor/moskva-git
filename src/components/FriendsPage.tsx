@@ -19,7 +19,13 @@ function Avatar({ u }: { u: ChatUser }) {
 
 type Tab = 'all' | 'requests';
 
-export default function FriendsPage({ onMessage }: { onMessage: (u: ChatUser) => void }) {
+export default function FriendsPage({
+  onMessage,
+  onOpenProfile,
+}: {
+  onMessage: (u: ChatUser) => void;
+  onOpenProfile: (id: number) => void;
+}) {
   const [friends, setFriends] = useState<ChatUser[]>([]);
   const [incoming, setIncoming] = useState<ChatUser[]>([]);
   const [outgoing, setOutgoing] = useState<ChatUser[]>([]);
@@ -178,10 +184,14 @@ export default function FriendsPage({ onMessage }: { onMessage: (u: ChatUser) =>
                 {friends.map((u) => (
                   <div className="fr-row" key={u.id}>
                     <Avatar u={u} />
-                    <span className="fr-row-mid">
+                    <button
+                      className="fr-row-mid fr-row-mid--btn"
+                      onClick={() => onOpenProfile(u.id)}
+                      title="Открыть профиль"
+                    >
                       <span className="fr-row-name">{u.name}</span>
                       <span className="fr-row-sub">@{u.handle}</span>
-                    </span>
+                    </button>
                     <span className="fr-row-actions">
                       <button className="fr-act" title="Написать" onClick={() => onMessage(u)}>
                         <Icon name="chat" />

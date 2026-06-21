@@ -38,6 +38,7 @@ interface ChatsPageProps {
   meName?: string; // имя текущего пользователя — для пометки «Переслано от …»
   openWith?: ChatUser | null; // открыть диалог с этим пользователем (например, из «Друзей»)
   onOpenedWith?: () => void; // сообщить, что openWith обработан
+  onOpenProfile?: (id: number) => void; // клик по нику собеседника → его профиль
 }
 
 export default function ChatsPage({
@@ -45,6 +46,7 @@ export default function ChatsPage({
   meName = '',
   openWith = null,
   onOpenedWith,
+  onOpenProfile,
 }: ChatsPageProps) {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
@@ -343,12 +345,17 @@ export default function ChatsPage({
                 {activeUser.avatar ? '' : activeUser.letter}
                 {activeUser.online && <span className="chat-online-dot" />}
               </span>
-              <span className="chat-view-id">
+              <button
+                type="button"
+                className="chat-view-id chat-view-id--btn"
+                onClick={() => onOpenProfile?.(activeUser.id)}
+                title="Открыть профиль"
+              >
                 <span className="chat-view-name">{activeUser.name}</span>
                 <span className={`chat-view-status${activeUser.online ? ' chat-view-status--online' : ''}`}>
                   {activeUser.online ? 'в сети' : `@${activeUser.handle}`}
                 </span>
-              </span>
+              </button>
             </header>
 
             <div className="chat-messages">

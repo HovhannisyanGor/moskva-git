@@ -73,4 +73,6 @@ export type View =
   | 'chats'
   | 'friends'
   | 'favorites'
+  | 'user'
+  | 'settings'
   | 'admin';

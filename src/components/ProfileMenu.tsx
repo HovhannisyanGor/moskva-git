@@ -230,15 +230,11 @@ export default function ProfileMenu({
                     <span className="profile-menu-arrow">›</span>
                   </button>
                 )}
-                <button
-                  className="profile-menu-item"
-                  type="button"
-                  onClick={() => setView('settings')}
-                >
+                <button className="profile-menu-item" type="button" onClick={() => go('settings')}>
                   <span className="profile-menu-icon">⚙️</span>
                   <span className="profile-menu-text">
                     <span className="profile-menu-title">Настройки</span>
-                    <span className="profile-menu-sub">Тема, уведомления, язык</span>
+                    <span className="profile-menu-sub">Тема, приватность, уведомления</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
