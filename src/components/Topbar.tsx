@@ -1,4 +1,5 @@
 import { useTheme } from '../hooks/useTheme';
+import { useI18n } from '../i18n';
 import type { Place, View } from '../types';
 import type { DisplayUser } from '../utils/profile';
 import ProfileMenu from './ProfileMenu';
@@ -16,10 +17,10 @@ interface TopbarProps {
   onOpenPlace: (p: Place) => void;
 }
 
-const NAV: { view: View; label: string; icon?: string }[] = [
-  { view: 'map', label: 'Карта' },
-  { view: 'achievements', label: 'Достижения', icon: 'trophy' },
-  { view: 'chats', label: 'Чаты', icon: 'chat' },
+const NAV: { view: View; labelKey: string; icon?: string }[] = [
+  { view: 'map', labelKey: 'nav.map' },
+  { view: 'achievements', labelKey: 'nav.achievements', icon: 'trophy' },
+  { view: 'chats', labelKey: 'nav.chats', icon: 'chat' },
 ];
 
 export default function Topbar({
@@ -33,6 +34,7 @@ export default function Topbar({
   onOpenPlace,
 }: TopbarProps) {
   const { mode, setMode, effective } = useTheme();
+  const { t } = useI18n();
 
   return (
     <header className="topbar">
@@ -48,7 +50,7 @@ export default function Topbar({
           alt="Localee"
         />
         <span className="logo-text">Localee</span>
-        <span className="logo-tagline">— исследуй город умно</span>
+        <span className="logo-tagline">{t('topbar.tagline')}</span>
       </button>
 
       <TopSearch onOpenProfile={onOpenProfile} onOpenPlace={onOpenPlace} />
@@ -61,7 +63,7 @@ export default function Topbar({
             onClick={() => onNavigate(n.view)}
           >
             {n.icon && <Icon name={n.icon} className="nav-btn-icon" />}
-            {n.label}
+            {t(n.labelKey)}
             {n.view === 'chats' && chatsUnread > 0 && (
               <span className="nav-badge nav-badge--inline">{chatsUnread > 99 ? '99+' : chatsUnread}</span>
             )}
@@ -73,7 +75,7 @@ export default function Topbar({
             className={`nav-btn ${activeView === 'admin' ? 'nav-btn--active' : ''}`}
             onClick={() => onNavigate('admin')}
           >
-            🛠 Админка
+            🛠 {t('nav.admin')}
           </button>
         )}
 

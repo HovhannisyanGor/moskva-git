@@ -8,6 +8,33 @@ export const authRouter = Router();
 // Палитра цветов для аватарок — назначаем новому пользователю случайный цвет.
 const COLORS = ['#FA3C3C', '#378ADD', '#3FAE6E', '#9B7FE6', '#D69A1E', '#E0568A'];
 
+const GENDERS = ['', 'male', 'female', 'other'];
+
+// Интересы могут прийти массивом или строкой. Приводим к компактной строке
+// «кофе,музеи,музыка»: чистим пустые, режем длину и количество.
+function normalizeInterests(input) {
+  const list = Array.isArray(input)
+    ? input
+    : String(input ?? '').split(',');
+  return list
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+    .slice(0, 12)
+    .map((s) => s.slice(0, 30))
+    .join(',');
+}
+
+// Проверка даты рождения: либо пусто, либо 'YYYY-MM-DD' в разумных пределах.
+function validBirthdate(s) {
+  if (s === '') return true;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return false;
+  const year = Number(m[1]);
+  return year >= 1900 && d.getTime() <= Date.now();
+}
+
 // --- Защита входа от перебора паролей (простой in-memory rate-limit по IP) ---
 const loginAttempts = new Map(); // ip -> { count, first, blockedUntil }
 const MAX_LOGIN_ATTEMPTS = 6; // столько неверных попыток в окне — и блок
@@ -146,6 +173,11 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   const handle = b.handle !== undefined ? String(b.handle).trim() : user.handle;
   const avatar = b.avatar !== undefined ? String(b.avatar) : user.avatar;
   const showOnline = b.show_online !== undefined ? (b.show_online ? 1 : 0) : user.show_online;
+  const birthdate = b.birthdate !== undefined ? String(b.birthdate).trim() : user.birthdate;
+  const gender = b.gender !== undefined ? String(b.gender).trim() : user.gender;
+  const interests = b.interests !== undefined ? normalizeInterests(b.interests) : user.interests;
+  const showBirthyear =
+    b.show_birthyear !== undefined ? (b.show_birthyear ? 1 : 0) : user.show_birthyear;
 
   if (!name) return res.status(400).json({ error: 'Имя не может быть пустым' });
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(handle))
@@ -153,13 +185,20 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   // Аватар-фото: либо пусто, либо корректный data:image небольшого размера (~1 МБ).
   if (avatar && (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(avatar) || avatar.length > 1_500_000))
     return res.status(400).json({ error: 'Картинка не подходит (формат или размер)' });
+  if (!validBirthdate(birthdate))
+    return res.status(400).json({ error: 'Неверная дата рождения' });
+  if (!GENDERS.includes(gender)) return res.status(400).json({ error: 'Неверное значение пола' });
 
   // Ник занят кем-то другим?
   if (db.prepare('SELECT 1 FROM users WHERE handle = ? AND id != ?').get(handle, req.userId))
     return res.status(409).json({ error: 'Этот ник уже занят' });
 
-  db.prepare('UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ?, show_online = ? WHERE id = ?')
-    .run(name, bio, city, color, letter, handle, avatar, showOnline, req.userId);
+  db.prepare(
+    'UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ?, show_online = ?, birthdate = ?, gender = ?, interests = ?, show_birthyear = ? WHERE id = ?',
+  ).run(
+    name, bio, city, color, letter, handle, avatar, showOnline,
+    birthdate, gender, interests, showBirthyear, req.userId,
+  );
 
   const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: toPublicUser(updated) });

@@ -2,6 +2,7 @@
 // (посещения, бейджи) в данные для отображения профиля.
 import type { ApiUser } from './api';
 import type { Visit, PlaceCategory } from '../types';
+import type { Lang } from '../i18n/translations';
 import { BADGES } from '../data/badges';
 import { PLACES } from '../data/places';
 
@@ -13,15 +14,18 @@ export interface DisplayUser {
   color: string;
   avatar: string;
   city: string;
-  since: string;
+  createdAt: string; // ISO — форматируем в компоненте под язык
   bio: string;
   email: string;
+  birthdate: string; // 'YYYY-MM-DD' или ''
+  gender: string; // '' | 'male' | 'female' | 'other'
+  interests: string[];
+  showBirthyear: boolean;
   places: number;
   badges: number;
   points: number;
   friends: number;
   level: number;
-  levelName: string;
   levelNext: number;
 }
 
@@ -54,17 +58,6 @@ export function levelFor(points: number) {
   return { level: cur.level, levelName: cur.name, levelNext: next ? next.min : cur.min };
 }
 
-const MONTHS = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
-];
-
-function sinceFrom(createdAt: string): string {
-  const d = new Date(createdAt);
-  if (Number.isNaN(d.getTime())) return '';
-  return `С ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-}
-
 const CATEGORY_COLOR: Record<PlaceCategory, string> = {
   landmark: '#FA3C3C',
   park: '#378ADD',
@@ -73,13 +66,19 @@ const CATEGORY_COLOR: Record<PlaceCategory, string> = {
   entertainment: '#9B7FE6',
 };
 
-function relativeWhen(iso: string): string {
+function relativeWhen(iso: string, lang: Lang): string {
   const then = new Date(iso);
   if (Number.isNaN(then.getTime())) return '';
   const today = new Date();
   const a = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const b = new Date(then.getFullYear(), then.getMonth(), then.getDate());
   const days = Math.round((a.getTime() - b.getTime()) / 86_400_000);
+  if (lang === 'en') {
+    if (days <= 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return b.toLocaleDateString('en-US');
+  }
   if (days <= 0) return 'Сегодня';
   if (days === 1) return 'Вчера';
   if (days < 7) return `${days} дн. назад`;
@@ -99,7 +98,7 @@ export function buildDisplayUser(
   const places = visits.length;
   const badges = unlockedBadges.length;
   const points = pointsFor(visits, unlockedBadges);
-  const { level, levelName, levelNext } = levelFor(points);
+  const { level, levelNext } = levelFor(points);
   return {
     name: u.name,
     handle: u.handle,
@@ -110,13 +109,16 @@ export function buildDisplayUser(
     city: u.city,
     bio: u.bio,
     email: u.email,
-    since: sinceFrom(u.created_at),
+    createdAt: u.created_at,
+    birthdate: u.birthdate ?? '',
+    gender: u.gender ?? '',
+    interests: (u.interests ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    showBirthyear: u.show_birthyear !== 0,
     places,
     badges,
     points,
     friends: 0, // появится, когда сделаем друзей
     level,
-    levelName,
     levelNext,
   };
 }
@@ -130,16 +132,16 @@ export function displayBadges(unlockedBadges: string[]): DisplayBadge[] {
   }));
 }
 
-export function recentPlaces(visits: Visit[]): RecentPlace[] {
+export function recentPlaces(visits: Visit[], lang: Lang = 'ru'): RecentPlace[] {
   return [...visits]
     .reverse()
     .slice(0, 5)
     .map((v) => {
       const p = PLACES.find((pl) => pl.id === v.placeId);
       return {
-        name: p?.name ?? 'Место',
+        name: p?.name ?? (lang === 'en' ? 'Place' : 'Место'),
         color: p ? CATEGORY_COLOR[p.category] : '#378ADD',
-        when: relativeWhen(v.visitedAt),
+        when: relativeWhen(v.visitedAt, lang),
       };
     });
 }

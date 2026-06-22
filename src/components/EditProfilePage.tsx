@@ -1,6 +1,10 @@
 import { useRef, useState } from 'react';
 import { api, type ApiUser } from '../utils/api';
 import type { DisplayUser } from '../utils/profile';
+import { useI18n } from '../i18n';
+import { fileToAvatar } from '../utils/avatar';
+import { GENDER_OPTS, CITY_OPTS } from './profileFields';
+import InterestsInput from './InterestsInput';
 
 interface EditProfilePageProps {
   user: DisplayUser;
@@ -19,38 +23,10 @@ const EMOJIS = [
   '🦊', '🐺', '🦁', '🐻', '🦉', '🐲', '🐱', '🐶', '🐼',
   '🐸', '🦄', '🐧', '🗺️', '⭐', '🔥', '🎒', '☕', '🎧',
 ];
-const CITIES = ['Москва', 'Санкт-Петербург', 'Казань', 'Другой'];
-
-// Уменьшаем выбранное фото до 256×256 (обрезка по центру) и отдаём как data URL —
-// чтобы аватар занимал мало места и помещался в базу.
-function fileToAvatar(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('read'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('img'));
-      img.onload = () => {
-        const size = 256;
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('ctx'));
-        const scale = Math.max(size / img.width, size / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function EditProfilePage({ user, onSaved, onBack, onResetAchievements }: EditProfilePageProps) {
   const u = user;
+  const { t, lang } = useI18n();
   const [avatarChar, setAvatarChar] = useState(u.letter); // буква или эмодзи на аватаре
   const [avatarColor, setAvatarColor] = useState(u.color);
   const [avatarImg, setAvatarImg] = useState(u.avatar || ''); // фото (data URL) или пусто
@@ -58,6 +34,9 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
   const [handle, setHandle] = useState(u.handle);
   const [bio, setBio] = useState(u.bio);
   const [city, setCity] = useState(u.city);
+  const [birthdate, setBirthdate] = useState(u.birthdate || '');
+  const [gender, setGender] = useState(u.gender || '');
+  const [interests, setInterests] = useState<string[]>(u.interests);
   const [email] = useState(u.email);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -70,14 +49,14 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
     e.target.value = ''; // позволяем выбрать тот же файл повторно
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setError('Файл слишком большой (до 10 МБ)');
+      setError(t('ep.fileTooBig'));
       return;
     }
     try {
       setError('');
       setAvatarImg(await fileToAvatar(file));
     } catch {
-      setError('Не удалось обработать изображение');
+      setError(t('ep.imageError'));
     }
   }
 
@@ -103,6 +82,9 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
         handle,
         bio,
         city,
+        birthdate,
+        gender,
+        interests,
         color: avatarColor,
         letter: avatarChar,
         avatar: avatarImg,
@@ -110,16 +92,14 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
       onSaved(updated);
       onBack();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка сохранения');
+      setError(e instanceof Error ? e.message : t('ep.saveError'));
     } finally {
       setBusy(false);
     }
   }
 
   function handleResetAchievements() {
-    const ok = window.confirm(
-      'Сбросить все достижения и отметки о посещённых местах? Это действие нельзя отменить.',
-    );
+    const ok = window.confirm(t('ep.resetConfirm'));
     if (ok) onResetAchievements();
   }
 
@@ -131,20 +111,20 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
     <div className="page-scroll">
       <div className="edit-page">
         <button className="ep-back" onClick={onBack}>
-          ← Назад к профилю
+          {t('ep.back')}
         </button>
-        <h1 className="ep-title">Редактировать профиль</h1>
+        <h1 className="ep-title">{t('ep.title')}</h1>
 
         <div className="ep-avatar-row">
           <div className="ep-avatar" style={avatarStyle}>
             {avatarImg ? '' : avatarChar}
           </div>
           <div>
-            <div className="ep-avatar-title">Аватар</div>
-            <div className="ep-avatar-sub">Загрузи фото или собери из цвета и эмодзи</div>
+            <div className="ep-avatar-title">{t('ep.avatar')}</div>
+            <div className="ep-avatar-sub">{t('ep.avatarSub')}</div>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
             <button className="ep-upload" type="button" onClick={() => fileRef.current?.click()}>
-              {avatarImg ? 'Заменить фото' : 'Загрузить фото'}
+              {avatarImg ? t('ep.replace') : t('ep.upload')}
             </button>
             {avatarImg && (
               <button
@@ -153,7 +133,7 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
                 onClick={() => setAvatarImg('')}
                 style={{ marginLeft: 8 }}
               >
-                Убрать фото
+                {t('ep.removePhoto')}
               </button>
             )}
           </div>
@@ -162,13 +142,13 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
         {!avatarImg && (
           <>
             <div className="ep-field">
-              <span className="ep-label">Цвет</span>
+              <span className="ep-label">{t('ep.color')}</span>
               <div className="ep-swatches">
                 {COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
-                    aria-label={`Цвет ${c}`}
+                    aria-label={`${t('ep.color')} ${c}`}
                     className={`ep-swatch ${avatarColor === c ? 'ep-swatch--active' : ''}`}
                     style={{ background: c }}
                     onClick={() => pickColor(c)}
@@ -178,13 +158,13 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
             </div>
 
             <div className="ep-field">
-              <span className="ep-label">Иконка</span>
+              <span className="ep-label">{t('ep.icon')}</span>
               <div className="ep-emoji-grid">
                 <button
                   type="button"
                   className={`ep-emoji ${usingLetter ? 'ep-emoji--active' : ''}`}
                   onClick={useLetter}
-                  title="Первая буква имени"
+                  title={t('ep.letterTitle')}
                 >
                   Аа
                 </button>
@@ -204,18 +184,18 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
         )}
 
         <label className="ep-field">
-          <span className="ep-label">Имя</span>
+          <span className="ep-label">{t('ep.name')}</span>
           <input className="ep-input" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
 
         <label className="ep-field">
-          <span className="ep-label">Никнейм</span>
+          <span className="ep-label">{t('ep.nickname')}</span>
           <input className="ep-input" value={handle} onChange={(e) => setHandle(e.target.value)} />
           <span className="ep-hint">localee.app/@{handle}</span>
         </label>
 
         <label className="ep-field">
-          <span className="ep-label">О себе</span>
+          <span className="ep-label">{t('ep.about')}</span>
           <textarea
             className="ep-input ep-textarea"
             rows={3}
@@ -224,40 +204,72 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
           />
         </label>
 
+        <label className="ep-field">
+          <span className="ep-label">{t('ep.birthday')}</span>
+          <input
+            className="ep-input"
+            type="date"
+            value={birthdate}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => setBirthdate(e.target.value)}
+          />
+        </label>
+
         <div className="ep-field">
-          <span className="ep-label">Город</span>
+          <span className="ep-label">{t('ep.gender')}</span>
           <div className="ep-chips">
-            {CITIES.map((c) => (
+            {GENDER_OPTS.map((g) => (
               <button
-                key={c}
+                key={g.value}
                 type="button"
-                className={`ep-chip ${city === c ? 'ep-chip--active' : ''}`}
-                onClick={() => setCity(c)}
+                className={`ep-chip ${gender === g.value ? 'ep-chip--active' : ''}`}
+                onClick={() => setGender(gender === g.value ? '' : g.value)}
               >
-                {c}
+                {t(g.key)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="ep-field">
+          <span className="ep-label">{t('ep.interests')}</span>
+          <InterestsInput value={interests} onChange={setInterests} placeholder={t('ep.interestsHint')} />
+        </div>
+
+        <div className="ep-field">
+          <span className="ep-label">{t('ep.city')}</span>
+          <div className="ep-chips">
+            {CITY_OPTS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                className={`ep-chip ${city === c.value ? 'ep-chip--active' : ''}`}
+                onClick={() => setCity(c.value)}
+              >
+                {lang === 'en' ? c.en : c.value}
               </button>
             ))}
           </div>
         </div>
 
         <label className="ep-field">
-          <span className="ep-label">Email</span>
+          <span className="ep-label">{t('ep.email')}</span>
           <input className="ep-input" type="email" value={email} readOnly />
-          <span className="ep-hint">Email пока нельзя изменить</span>
+          <span className="ep-hint">{t('ep.emailHint')}</span>
         </label>
 
         <div className="ep-danger">
-          <div className="ep-danger-label">Опасная зона</div>
+          <div className="ep-danger-label">{t('ep.danger')}</div>
           <div className="ep-danger-row">
-            <span>Сбросить достижения</span>
+            <span>{t('ep.resetAch')}</span>
             <button className="ep-danger-btn" type="button" onClick={handleResetAchievements}>
-              Сбросить
+              {t('ep.reset')}
             </button>
           </div>
           <div className="ep-danger-row">
-            <span>Удалить аккаунт</span>
+            <span>{t('ep.deleteAcc')}</span>
             <button className="ep-danger-btn" type="button">
-              Удалить
+              {t('ep.delete')}
             </button>
           </div>
         </div>
@@ -266,10 +278,10 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
 
         <div className="ep-actions">
           <button className="ep-cancel" type="button" onClick={onBack} disabled={busy}>
-            Отмена
+            {t('common.cancel')}
           </button>
           <button className="ep-save" type="button" onClick={save} disabled={busy}>
-            {busy ? 'Сохранение…' : 'Сохранить изменения'}
+            {busy ? t('common.saving') : t('ep.saveChanges')}
           </button>
         </div>
       </div>

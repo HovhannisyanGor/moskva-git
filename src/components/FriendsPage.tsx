@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type ChatUser } from '../utils/api';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 function avatarStyle(u: { avatar: string; color: string }) {
   return u.avatar
@@ -26,6 +27,7 @@ export default function FriendsPage({
   onMessage: (u: ChatUser) => void;
   onOpenProfile: (id: number) => void;
 }) {
+  const { t } = useI18n();
   const [friends, setFriends] = useState<ChatUser[]>([]);
   const [incoming, setIncoming] = useState<ChatUser[]>([]);
   const [outgoing, setOutgoing] = useState<ChatUser[]>([]);
@@ -101,7 +103,7 @@ export default function FriendsPage({
     <div className="page-scroll">
       <div className="friends-page">
         <div className="fr-head">
-          <span className="fr-title">Друзья</span>
+          <span className="fr-title">{t('friends.title')}</span>
           <button
             className="fr-add"
             type="button"
@@ -111,7 +113,7 @@ export default function FriendsPage({
               setResults([]);
             }}
           >
-            {adding ? 'Закрыть' : '+ Добавить'}
+            {adding ? t('friends.close') : t('friends.add')}
           </button>
         </div>
 
@@ -119,14 +121,14 @@ export default function FriendsPage({
           <>
             <div className="fr-search">
               <input
-                placeholder="🔍 Ник, имя или ID…"
+                placeholder={t('chats.searchPh')}
                 value={searchQ}
                 onChange={(e) => onSearch(e.target.value)}
                 autoFocus
               />
             </div>
             {searchQ.trim().length >= 1 && results.length === 0 && (
-              <div className="fr-empty">Никого не нашлось</div>
+              <div className="fr-empty">{t('friends.noneFound')}</div>
             )}
             {results.map((u) => {
               const rel = relationOf(u.id);
@@ -140,16 +142,16 @@ export default function FriendsPage({
                     </span>
                   </span>
                   <span className="fr-row-actions">
-                    {rel === 'friends' && <span className="fr-tag">в друзьях</span>}
-                    {rel === 'outgoing' && <span className="fr-tag">заявка отправлена</span>}
+                    {rel === 'friends' && <span className="fr-tag">{t('friends.inFriends')}</span>}
+                    {rel === 'outgoing' && <span className="fr-tag">{t('friends.requestSent')}</span>}
                     {rel === 'incoming' && (
                       <button className="fr-add-btn" onClick={() => accept(u)}>
-                        Принять
+                        {t('friends.accept')}
                       </button>
                     )}
                     {rel === 'none' && (
                       <button className="fr-add-btn" onClick={() => add(u)}>
-                        + В друзья
+                        {t('friends.addFriend')}
                       </button>
                     )}
                   </span>
@@ -164,22 +166,20 @@ export default function FriendsPage({
                 className={`fr-tab ${tab === 'all' ? 'fr-tab--active' : ''}`}
                 onClick={() => setTab('all')}
               >
-                Друзья ({friends.length})
+                {t('friends.tabAll', { n: friends.length })}
               </button>
               <button
                 className={`fr-tab ${tab === 'requests' ? 'fr-tab--active' : ''}`}
                 onClick={() => setTab('requests')}
               >
-                Запросы ({incoming.length})
+                {t('friends.tabReq', { n: incoming.length })}
               </button>
             </div>
 
             {tab === 'all' && (
               <>
                 {friends.length === 0 && (
-                  <div className="fr-empty">
-                    Пока нет друзей. Нажми «+ Добавить» и найди кого-нибудь по нику или ID.
-                  </div>
+                  <div className="fr-empty">{t('friends.emptyAll')}</div>
                 )}
                 {friends.map((u) => (
                   <div className="fr-row" key={u.id}>
@@ -193,12 +193,12 @@ export default function FriendsPage({
                       <span className="fr-row-sub">@{u.handle}</span>
                     </button>
                     <span className="fr-row-actions">
-                      <button className="fr-act" title="Написать" onClick={() => onMessage(u)}>
+                      <button className="fr-act" title={t('friends.write')} onClick={() => onMessage(u)}>
                         <Icon name="chat" />
                       </button>
                       <button
                         className="fr-act fr-act--danger"
-                        title="Удалить из друзей"
+                        title={t('friends.removeFriend')}
                         onClick={() => remove(u)}
                       >
                         ×
@@ -211,8 +211,8 @@ export default function FriendsPage({
 
             {tab === 'requests' && (
               <>
-                <div className="fr-group-label">Входящие</div>
-                {incoming.length === 0 && <div className="fr-empty">Входящих заявок нет</div>}
+                <div className="fr-group-label">{t('friends.incoming')}</div>
+                {incoming.length === 0 && <div className="fr-empty">{t('friends.noIncoming')}</div>}
                 {incoming.map((u) => (
                   <div className="fr-row" key={u.id}>
                     <Avatar u={u} />
@@ -221,10 +221,10 @@ export default function FriendsPage({
                       <span className="fr-row-sub">@{u.handle}</span>
                     </span>
                     <span className="fr-req-actions">
-                      <button className="fr-req-accept" title="Принять" onClick={() => accept(u)}>
+                      <button className="fr-req-accept" title={t('friends.accept')} onClick={() => accept(u)}>
                         ✓
                       </button>
-                      <button className="fr-req-decline" title="Отклонить" onClick={() => remove(u)}>
+                      <button className="fr-req-decline" title={t('friends.decline')} onClick={() => remove(u)}>
                         ×
                       </button>
                     </span>
@@ -233,7 +233,7 @@ export default function FriendsPage({
 
                 {outgoing.length > 0 && (
                   <>
-                    <div className="fr-group-label">Исходящие</div>
+                    <div className="fr-group-label">{t('friends.outgoing')}</div>
                     {outgoing.map((u) => (
                       <div className="fr-row" key={u.id}>
                         <Avatar u={u} />
@@ -242,8 +242,8 @@ export default function FriendsPage({
                           <span className="fr-row-sub">@{u.handle}</span>
                         </span>
                         <span className="fr-row-actions">
-                          <button className="fr-act" title="Отменить заявку" onClick={() => remove(u)}>
-                            Отменить
+                          <button className="fr-act" title={t('friends.cancelRequest')} onClick={() => remove(u)}>
+                            {t('friends.cancelReq')}
                           </button>
                         </span>
                       </div>

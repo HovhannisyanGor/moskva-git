@@ -1,51 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ChatMessage, FilterParams, Route } from '../types';
 import { getRouteFromClaude } from '../utils/claudeApi';
+import { useI18n } from '../i18n';
 
 interface AIChatProps {
   onRouteUpdate: (route: Route | null) => void;
 }
 
-const FILTER_OPTIONS = {
-  time: [
-    { value: '2h', label: '2 часа' },
-    { value: '4h', label: '4 часа' },
-    { value: 'fullday', label: 'Весь день' },
-    { value: 'weekend', label: 'Выходные' },
-  ],
-  people: [
-    { value: 'solo', label: 'Один' },
-    { value: 'couple', label: 'Вдвоём' },
-    { value: 'family', label: 'С детьми' },
-    { value: 'group', label: 'Группа' },
-  ],
-  budget: [
-    { value: 'free', label: 'Бесплатно' },
-    { value: '2000', label: 'До 2 000 ₽' },
-    { value: '5000', label: 'До 5 000 ₽' },
-    { value: 'unlimited', label: 'Без лимита' },
-  ],
-  interests: [
-    { value: 'all', label: 'Всё подряд' },
-    { value: 'culture', label: 'История' },
-    { value: 'nature', label: 'Природа' },
-    { value: 'art', label: 'Искусство' },
-    { value: 'food', label: 'Гастрономия' },
-  ],
-};
-
-const FILTER_LABELS: Record<keyof FilterParams, string> = {
-  time: 'Время',
-  people: 'Компания',
-  budget: 'Бюджет',
-  interests: 'Интересы',
+// Значения фильтров (метки берём из словаря по ключу ai.opt.<группа>.<значение>).
+const FILTER_OPTIONS: Record<keyof FilterParams, string[]> = {
+  time: ['2h', '4h', 'fullday', 'weekend'],
+  people: ['solo', 'couple', 'family', 'group'],
+  budget: ['free', '2000', '5000', 'unlimited'],
+  interests: ['all', 'culture', 'nature', 'art', 'food'],
 };
 
 export default function AIChat({ onRouteUpdate }: AIChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const { t } = useI18n();
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       role: 'assistant',
-      content: 'Привет! Я помогу составить идеальный маршрут по Москве.\n\nЗадай параметры фильтрами ниже или просто напиши, что тебе интересно — и я проложу маршрут прямо на карте.',
+      content: t('ai.greeting'),
       timestamp: new Date(),
     },
   ]);
@@ -107,7 +82,7 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Не удалось получить ответ. Проверь подключение к интернету и попробуй снова.',
+        content: t('ai.error'),
         timestamp: new Date(),
       }]);
     } finally {
@@ -126,7 +101,7 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
     onRouteUpdate(null);
     setMessages([{
       role: 'assistant',
-      content: 'Маршрут сброшен. Напиши новый запрос — составлю другой маршрут!',
+      content: t('ai.resetMsg'),
       timestamp: new Date(),
     }]);
   };
@@ -136,19 +111,19 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
       <div className="sidebar-header">
         <div className="sidebar-title">
           <span className="sidebar-icon">✦</span>
-          <span>AI-помощник</span>
+          <span>{t('ai.title')}</span>
         </div>
-        <p className="sidebar-subtitle">Опиши, что хочешь — составлю маршрут</p>
+        <p className="sidebar-subtitle">{t('ai.subtitle')}</p>
       </div>
 
       <div className="filters" ref={filtersRef}>
         {(Object.keys(FILTER_OPTIONS) as (keyof FilterParams)[]).map((key) => {
           const options = FILTER_OPTIONS[key];
           const isOpen = openFilter === key;
-          const current = options.find((o) => o.value === filters[key])?.label ?? '';
+          const current = options.includes(filters[key]) ? t(`ai.opt.${key}.${filters[key]}`) : '';
           return (
             <div className={`filter-group${isOpen ? ' filter-group--open' : ''}`} key={key}>
-              <label className="filter-label">{FILTER_LABELS[key]}</label>
+              <label className="filter-label">{t(`ai.f.${key}`)}</label>
               <button
                 type="button"
                 className={`filter-trigger${isOpen ? ' filter-trigger--open' : ''}`}
@@ -167,22 +142,22 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
               </button>
               {isOpen && (
                 <div className="filter-pop" role="listbox">
-                  {options.map((o, i) => {
-                    const active = filters[key] === o.value;
+                  {options.map((value, i) => {
+                    const active = filters[key] === value;
                     return (
                       <button
                         type="button"
-                        key={o.value}
+                        key={value}
                         role="option"
                         aria-selected={active}
                         className={`filter-opt${active ? ' filter-opt--active' : ''}`}
                         style={{ animationDelay: `${i * 35}ms` }}
                         onClick={() => {
-                          setFilters((prev) => ({ ...prev, [key]: o.value }));
+                          setFilters((prev) => ({ ...prev, [key]: value }));
                           setOpenFilter(null);
                         }}
                       >
-                        <span>{o.label}</span>
+                        <span>{t(`ai.opt.${key}.${value}`)}</span>
                         {active && <span className="filter-check">✓</span>}
                       </button>
                     );
@@ -198,7 +173,7 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
         {messages.map((msg, i) => (
           <div key={i} className={`message message--${msg.role}`}>
             {msg.role === 'assistant' && (
-              <div className="message-sender">✦ AI-помощник</div>
+              <div className="message-sender">{t('ai.sender')}</div>
             )}
             <div className="message-bubble">
               {msg.content.split('\n').map((line, j) => (
@@ -224,16 +199,16 @@ export default function AIChat({ onRouteUpdate }: AIChatProps) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Спросите AI-помощника: например, «маршрут на день по центру»…"
+          placeholder={t('ai.inputPh')}
           rows={3}
           disabled={loading}
         />
         <div className="chat-actions">
           <button className="btn-clear" onClick={clearRoute}>
-            Сбросить маршрут
+            {t('ai.reset')}
           </button>
           <button className="btn-send" onClick={handleSend} disabled={loading || !input.trim()}>
-            Построить ↗
+            {t('ai.build')}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ThemeMode } from '../hooks/useTheme';
 import type { View } from '../types';
 import type { DisplayUser } from '../utils/profile';
+import { useI18n } from '../i18n';
 
 interface ProfileMenuProps {
   themeMode: ThemeMode;
@@ -60,6 +61,7 @@ export default function ProfileMenu({
   navMode = false,
   navActive = false,
 }: ProfileMenuProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'menu' | 'settings'>('menu');
   const [notifs, setNotifs] = useState<Notifs>(readNotifs);
@@ -114,18 +116,18 @@ export default function ProfileMenu({
         <button
           className={`profile-nav-btn${open || navActive ? ' profile-nav-btn--active' : ''}`}
           onClick={() => setOpen((o) => !o)}
-          aria-label="Профиль"
+          aria-label={t('nav.profile')}
         >
           <span className="profile-nav-av" style={avatarStyle}>
             {u.avatar ? '' : u.letter || ''}
           </span>
-          <span>Профиль</span>
+          <span>{t('nav.profile')}</span>
         </button>
       ) : (
         <button
           className={`profile-btn ${open ? 'profile-btn--active' : ''}`}
           onClick={() => setOpen((o) => !o)}
-          aria-label="Профиль"
+          aria-label={t('nav.profile')}
           style={avatarStyle}
         >
           {u.avatar ? null : u.letter ? (
@@ -160,30 +162,28 @@ export default function ProfileMenu({
               <div className="profile-stats">
                 <div className="profile-stat">
                   <b>{u.places}</b>
-                  <span>мест</span>
+                  <span>{t('menu.statPlaces')}</span>
                 </div>
                 <div className="profile-stat">
                   <b>{u.badges}</b>
-                  <span>бейджей</span>
+                  <span>{t('menu.statBadges')}</span>
                 </div>
                 <div className="profile-stat">
                   <b>{u.points}</b>
-                  <span>баллов</span>
+                  <span>{t('menu.statPoints')}</span>
                 </div>
               </div>
 
               <div className="profile-level">
                 <div className="profile-level-top">
-                  <span>
-                    Уровень {u.level} — {u.levelName}
-                  </span>
-                  <span className="profile-level-tag">Ур. {u.level}</span>
+                  <span>{t('profile.level', { level: u.level, name: t(`level.${u.level}`) })}</span>
+                  <span className="profile-level-tag">{t('profile.levelTag', { level: u.level })}</span>
                 </div>
                 <div className="profile-level-bar">
                   <div className="profile-level-fill" style={{ width: `${progress * 100}%` }} />
                 </div>
                 <div className="profile-level-sub">
-                  {u.points} / {u.levelNext} баллов до Ур. {u.level + 1}
+                  {t('profile.levelSub', { points: u.points, next: u.levelNext, nextLevel: u.level + 1 })}
                 </div>
               </div>
 
@@ -191,32 +191,32 @@ export default function ProfileMenu({
                 <button className="profile-menu-item" type="button" onClick={() => go('profile')}>
                   <span className="profile-menu-icon">👤</span>
                   <span className="profile-menu-text">
-                    <span className="profile-menu-title">Мой профиль</span>
-                    <span className="profile-menu-sub">Личная страница и история</span>
+                    <span className="profile-menu-title">{t('menu.myProfile')}</span>
+                    <span className="profile-menu-sub">{t('menu.myProfileSub')}</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
                 <button className="profile-menu-item" type="button" onClick={() => go('chats')}>
                   <span className="profile-menu-icon">💬</span>
                   <span className="profile-menu-text">
-                    <span className="profile-menu-title">Чаты и группы</span>
-                    <span className="profile-menu-sub">Сообщения и каналы</span>
+                    <span className="profile-menu-title">{t('menu.chats')}</span>
+                    <span className="profile-menu-sub">{t('menu.chatsSub')}</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
                 <button className="profile-menu-item" type="button" onClick={() => go('favorites')}>
                   <span className="profile-menu-icon">⭐</span>
                   <span className="profile-menu-text">
-                    <span className="profile-menu-title">Избранное</span>
-                    <span className="profile-menu-sub">Сохранённые места</span>
+                    <span className="profile-menu-title">{t('menu.favorites')}</span>
+                    <span className="profile-menu-sub">{t('menu.favoritesSub')}</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
                 <button className="profile-menu-item" type="button" onClick={() => go('friends')}>
                   <span className="profile-menu-icon">🤝</span>
                   <span className="profile-menu-text">
-                    <span className="profile-menu-title">Друзья</span>
-                    <span className="profile-menu-sub">Список и запросы</span>
+                    <span className="profile-menu-title">{t('menu.friends')}</span>
+                    <span className="profile-menu-sub">{t('menu.friendsSub')}</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
@@ -224,8 +224,8 @@ export default function ProfileMenu({
                   <button className="profile-menu-item" type="button" onClick={() => go('admin')}>
                     <span className="profile-menu-icon">🛠</span>
                     <span className="profile-menu-text">
-                      <span className="profile-menu-title">Админка</span>
-                      <span className="profile-menu-sub">Пользователи и управление</span>
+                      <span className="profile-menu-title">{t('menu.admin')}</span>
+                      <span className="profile-menu-sub">{t('menu.adminSub')}</span>
                     </span>
                     <span className="profile-menu-arrow">›</span>
                   </button>
@@ -233,8 +233,8 @@ export default function ProfileMenu({
                 <button className="profile-menu-item" type="button" onClick={() => go('settings')}>
                   <span className="profile-menu-icon">⚙️</span>
                   <span className="profile-menu-text">
-                    <span className="profile-menu-title">Настройки</span>
-                    <span className="profile-menu-sub">Тема, приватность, уведомления</span>
+                    <span className="profile-menu-title">{t('menu.settings')}</span>
+                    <span className="profile-menu-sub">{t('menu.settingsSub')}</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>
@@ -248,7 +248,7 @@ export default function ProfileMenu({
                 >
                   <span className="profile-menu-icon">↩</span>
                   <span className="profile-menu-text">
-                    <span className="profile-menu-title">Выйти</span>
+                    <span className="profile-menu-title">{t('menu.logout')}</span>
                   </span>
                 </button>
               </div>

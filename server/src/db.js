@@ -50,6 +50,24 @@ if (!userCols.some((c) => c.name === 'show_online')) {
   db.exec('ALTER TABLE users ADD COLUMN show_online INTEGER NOT NULL DEFAULT 1');
 }
 
+// Профиль (как в соцсетях): дата рождения, пол и интересы.
+// birthdate хранится строкой 'YYYY-MM-DD' (или пусто, если не указана).
+if (!userCols.some((c) => c.name === 'birthdate')) {
+  db.exec("ALTER TABLE users ADD COLUMN birthdate TEXT NOT NULL DEFAULT ''");
+}
+// gender: '' (не указан) | 'male' | 'female' | 'other'.
+if (!userCols.some((c) => c.name === 'gender')) {
+  db.exec("ALTER TABLE users ADD COLUMN gender TEXT NOT NULL DEFAULT ''");
+}
+// interests: интересы/хобби через запятую, например 'кофе,музеи,музыка'.
+if (!userCols.some((c) => c.name === 'interests')) {
+  db.exec("ALTER TABLE users ADD COLUMN interests TEXT NOT NULL DEFAULT ''");
+}
+// Приватность: показывать ли год рождения (и возраст) другим. 1 = показывать.
+if (!userCols.some((c) => c.name === 'show_birthyear')) {
+  db.exec('ALTER TABLE users ADD COLUMN show_birthyear INTEGER NOT NULL DEFAULT 1');
+}
+
 // Бутстрап администраторов: всех, чьи email перечислены в ADMIN_EMAILS, повышаем
 // до admin при старте. Безопасно гонять каждый раз. Роли, выданные внутри самой
 // админки, не трогаем — понижаем только если так решит администратор вручную.
