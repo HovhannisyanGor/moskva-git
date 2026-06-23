@@ -107,6 +107,38 @@ export interface ChatMessageItem {
   replyTo: ReplyPreview | null;
 }
 
+// --- Группы ---
+export interface GroupInfo {
+  id: number;
+  name: string;
+  color: string;
+  letter: string;
+  ownerId: number;
+  inviteToken: string;
+  memberCount: number;
+}
+export interface GroupListItem extends GroupInfo {
+  last: { text: string; fromMe: boolean; author: string; createdAt: string } | null;
+  unread: number;
+}
+export interface GroupSender {
+  id: number;
+  name: string;
+  color: string;
+  letter: string;
+  avatar: string;
+}
+export interface GroupMessageItem {
+  id: number;
+  fromMe: boolean;
+  text: string;
+  createdAt: string;
+  edited: boolean;
+  forwardedFrom: string;
+  replyTo: (ReplyPreview & { author: string }) | null;
+  sender: GroupSender | null;
+}
+
 // Универсальный запрос: добавляет токен (если нужно), разбирает JSON,
 // а при ошибке кидает понятное сообщение от сервера.
 async function request<T>(
@@ -209,6 +241,88 @@ export const api = {
       auth: true,
     });
   },
+
+  // --- Группы ---
+  async groupList() {
+    const data = await request<{ groups: GroupListItem[] }>('/api/groups', { auth: true });
+    return data.groups;
+  },
+  async createGroup(name: string, memberIds: number[]) {
+    const data = await request<{ group: GroupInfo }>('/api/groups', {
+      method: 'POST',
+      body: { name, memberIds },
+      auth: true,
+    });
+    return data.group;
+  },
+  async groupInfo(id: number) {
+    return request<{ group: GroupInfo; members: ChatUser[] }>(`/api/groups/${id}`, { auth: true });
+  },
+  async groupMessages(id: number) {
+    return request<{ group: GroupInfo; messages: GroupMessageItem[] }>(`/api/groups/${id}/messages`, {
+      auth: true,
+    });
+  },
+  async groupSend(id: number, text: string, opts: { replyTo?: number } = {}) {
+    const data = await request<{ message: GroupMessageItem }>(`/api/groups/${id}/messages`, {
+      method: 'POST',
+      body: { text, replyTo: opts.replyTo },
+      auth: true,
+    });
+    return data.message;
+  },
+  async groupEditMessage(id: number, text: string) {
+    const data = await request<{ message: GroupMessageItem }>(`/api/groups/messages/${id}`, {
+      method: 'PATCH',
+      body: { text },
+      auth: true,
+    });
+    return data.message;
+  },
+  async groupDeleteMessage(id: number) {
+    return request<{ ok: boolean }>(`/api/groups/messages/${id}`, { method: 'DELETE', auth: true });
+  },
+  async groupAddMember(groupId: number, userId: number) {
+    const data = await request<{ ok: boolean; group: GroupInfo }>(`/api/groups/${groupId}/members`, {
+      method: 'POST',
+      body: { userId },
+      auth: true,
+    });
+    return data.group;
+  },
+  async groupRemoveMember(groupId: number, userId: number) {
+    return request<{ ok: boolean }>(`/api/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
+      auth: true,
+    });
+  },
+  async groupLeave(id: number) {
+    return request<{ ok: boolean }>(`/api/groups/${id}/leave`, { method: 'DELETE', auth: true });
+  },
+  async groupRename(id: number, name: string) {
+    const data = await request<{ group: GroupInfo }>(`/api/groups/${id}`, {
+      method: 'PATCH',
+      body: { name },
+      auth: true,
+    });
+    return data.group;
+  },
+  async groupDelete(id: number) {
+    return request<{ ok: boolean }>(`/api/groups/${id}`, { method: 'DELETE', auth: true });
+  },
+  async groupInvitePreview(token: string) {
+    return request<{ group: GroupInfo; alreadyMember: boolean }>(`/api/groups/invite/${token}`, {
+      auth: true,
+    });
+  },
+  async groupJoin(token: string) {
+    const data = await request<{ group: GroupInfo }>(`/api/groups/invite/${token}`, {
+      method: 'POST',
+      auth: true,
+    });
+    return data.group;
+  },
+
   async searchUsers(q: string) {
     const data = await request<{ users: ChatUser[] }>(
       `/api/users/search?q=${encodeURIComponent(q)}`,

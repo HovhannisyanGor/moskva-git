@@ -106,6 +106,26 @@ export default function App() {
     };
   }, []);
 
+  // Пригласительная ссылка в группу: ?join=TOKEN — вступаем и открываем «Чаты».
+  useEffect(() => {
+    if (!currentUser) return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('join');
+    if (!token) return;
+    (async () => {
+      try {
+        await api.groupJoin(token);
+        setActiveView('chats');
+      } catch {
+        /* ссылка недействительна — молча игнорируем */
+      } finally {
+        params.delete('join');
+        const qs = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+      }
+    })();
+  }, [currentUser]);
+
   const handleLogout = useCallback(() => {
     api.logout();
     setCurrentUser(null);
@@ -301,6 +321,7 @@ export default function App() {
           <ChatsPage
             onActiveChatChange={setActiveChatUser}
             meName={displayUser.name}
+            meId={meId}
             openWith={chatWith}
             onOpenedWith={() => setChatWith(null)}
             onOpenProfile={openUserProfile}

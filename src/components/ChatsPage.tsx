@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, type ChatListItem, type ChatMessageItem, type ChatUser } from '../utils/api';
+import {
+  api,
+  type ChatListItem,
+  type ChatMessageItem,
+  type ChatUser,
+  type GroupListItem,
+  type GroupInfo,
+  type GroupMessageItem,
+} from '../utils/api';
 import { useI18n } from '../i18n';
+import GroupSettings from './GroupSettings';
+import CreateGroup from './CreateGroup';
+
+// Сообщение может быть из личного чата или из группы (у группового есть автор).
+type AnyMsg = ChatMessageItem | GroupMessageItem;
 
 // Короткое время: сегодня — часы:минуты, иначе — дата.
 function timeShort(iso: string | undefined, locale: string): string {
@@ -42,6 +55,7 @@ function avatarStyle(u: { avatar: string; color: string }) {
 interface ChatsPageProps {
   onActiveChatChange?: (userId: number | null) => void;
   meName?: string; // имя текущего пользователя — для пометки «Переслано от …»
+  meId?: number; // id текущего пользователя — для групп (владелец, «вы»)
   openWith?: ChatUser | null; // открыть диалог с этим пользователем (например, из «Друзей»)
   onOpenedWith?: () => void; // сообщить, что openWith обработан
   onOpenProfile?: (id: number) => void; // клик по нику собеседника → его профиль
@@ -50,6 +64,7 @@ interface ChatsPageProps {
 export default function ChatsPage({
   onActiveChatChange,
   meName = '',
+  meId,
   openWith = null,
   onOpenedWith,
   onOpenProfile,
@@ -58,7 +73,7 @@ export default function ChatsPage({
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
-  const [messages, setMessages] = useState<ChatMessageItem[]>([]);
+  const [messages, setMessages] = useState<AnyMsg[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -68,11 +83,19 @@ export default function ChatsPage({
   const [results, setResults] = useState<ChatUser[]>([]);
 
   // Действия с сообщениями
-  const [menuMsg, setMenuMsg] = useState<ChatMessageItem | null>(null); // открытое меню действий
-  const [replyTo, setReplyTo] = useState<ChatMessageItem | null>(null); // на что отвечаем
-  const [editing, setEditing] = useState<ChatMessageItem | null>(null); // что редактируем
-  const [forwarding, setForwarding] = useState<ChatMessageItem | null>(null); // что пересылаем
+  const [menuMsg, setMenuMsg] = useState<AnyMsg | null>(null); // открытое меню действий
+  const [replyTo, setReplyTo] = useState<AnyMsg | null>(null); // на что отвечаем
+  const [editing, setEditing] = useState<AnyMsg | null>(null); // что редактируем
+  const [forwarding, setForwarding] = useState<AnyMsg | null>(null); // что пересылаем
   const [toast, setToast] = useState('');
+
+  // Группы
+  const [groups, setGroups] = useState<GroupListItem[]>([]);
+  const [activeGroup, setActiveGroup] = useState<GroupInfo | null>(null);
+  const [showSettings, setShowSettings] = useState(false); // панель настроек группы
+  const [creating, setCreating] = useState(false); // окно «создать группу»
+  const activeGroupRef = useRef<number | null>(null);
+  const isGroup = activeGroup != null;
 
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,7 +103,9 @@ export default function ChatsPage({
 
   const loadChats = useCallback(async () => {
     try {
-      setChats(await api.chatList());
+      const [c, g] = await Promise.all([api.chatList(), api.groupList()]);
+      setChats(c);
+      setGroups(g);
     } catch {
       /* молча — это фоновый опрос */
     }
@@ -91,6 +116,19 @@ export default function ChatsPage({
       const data = await api.chatMessages(uid);
       if (activeIdRef.current === uid) {
         setActiveUser(data.user);
+        setMessages(data.messages);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Загрузка сообщений группы (и обновление инфо: название, число участников).
+  const loadGroupMessages = useCallback(async (gid: number) => {
+    try {
+      const data = await api.groupMessages(gid);
+      if (activeGroupRef.current === gid) {
+        setActiveGroup(data.group);
         setMessages(data.messages);
       }
     } catch {
@@ -117,6 +155,20 @@ export default function ChatsPage({
     const t = setInterval(() => loadMessages(activeUserId), 1500);
     return () => clearInterval(t);
   }, [activeUserId, loadMessages]);
+
+  // Сообщения активной группы: загрузка + опрос.
+  useEffect(() => {
+    activeGroupRef.current = activeGroup?.id ?? null;
+    const gid = activeGroup?.id;
+    if (gid == null) return;
+    setLoading(true);
+    loadGroupMessages(gid).finally(() => {
+      if (activeGroupRef.current === gid) setLoading(false);
+    });
+    const tm = setInterval(() => loadGroupMessages(gid), 1500);
+    return () => clearInterval(tm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGroup?.id, loadGroupMessages]);
 
   // Прокрутка к последнему сообщению.
   useEffect(() => {
@@ -154,6 +206,8 @@ export default function ChatsPage({
   }, [openWith?.id]);
 
   function openChat(user: ChatUser) {
+    setActiveGroup(null);
+    activeGroupRef.current = null;
     setActiveUserId(user.id);
     setActiveUser(user);
     setMessages([]);
@@ -164,6 +218,22 @@ export default function ChatsPage({
     setReplyTo(null);
     setEditing(null);
     setInput('');
+  }
+
+  function openGroup(g: GroupInfo) {
+    setActiveUserId(null);
+    activeIdRef.current = null;
+    setActiveUser(null);
+    setActiveGroup(g);
+    setMessages([]);
+    setMobilePane('chat');
+    setNewChat(false);
+    setSearchQ('');
+    setResults([]);
+    setReplyTo(null);
+    setEditing(null);
+    setInput('');
+    setShowSettings(false);
   }
 
   async function onSearch(q: string) {
@@ -181,15 +251,20 @@ export default function ChatsPage({
 
   async function send() {
     const text = input.trim();
-    if (!text || activeUserId == null || sending) return;
+    if (!text || sending || (activeUserId == null && !activeGroup)) return;
     setSending(true);
     try {
       if (editing) {
-        const updated = await api.chatEditMessage(editing.id, text);
+        const updated = isGroup
+          ? await api.groupEditMessage(editing.id, text)
+          : await api.chatEditMessage(editing.id, text);
         setMessages((prev) => prev.map((x) => (x.id === editing.id ? updated : x)));
         setEditing(null);
       } else {
-        const msg = await api.chatSend(activeUserId, text, replyTo ? { replyTo: replyTo.id } : {});
+        const opts = replyTo ? { replyTo: replyTo.id } : {};
+        const msg = isGroup
+          ? await api.groupSend(activeGroup!.id, text, opts)
+          : await api.chatSend(activeUserId!, text, opts);
         setMessages((prev) => [...prev, msg]);
         setReplyTo(null);
       }
@@ -203,20 +278,20 @@ export default function ChatsPage({
   }
 
   // --- Действия из меню ---
-  function startReply(m: ChatMessageItem) {
+  function startReply(m: AnyMsg) {
     setEditing(null);
     setReplyTo(m);
     setMenuMsg(null);
     inputRef.current?.focus();
   }
-  function startEdit(m: ChatMessageItem) {
+  function startEdit(m: AnyMsg) {
     setReplyTo(null);
     setEditing(m);
     setInput(m.text);
     setMenuMsg(null);
     inputRef.current?.focus();
   }
-  async function copyMsg(m: ChatMessageItem) {
+  async function copyMsg(m: AnyMsg) {
     setMenuMsg(null);
     try {
       await navigator.clipboard.writeText(m.text);
@@ -225,11 +300,12 @@ export default function ChatsPage({
       setToast(t('chats.copyFail'));
     }
   }
-  async function deleteMsg(m: ChatMessageItem) {
+  async function deleteMsg(m: AnyMsg) {
     setMenuMsg(null);
     if (!window.confirm(t('chats.deleteConfirm'))) return;
     try {
-      await api.chatDeleteMessage(m.id);
+      if (isGroup) await api.groupDeleteMessage(m.id);
+      else await api.chatDeleteMessage(m.id);
       setMessages((prev) => prev.filter((x) => x.id !== m.id));
       if (replyTo?.id === m.id) setReplyTo(null);
       if (editing?.id === m.id) {
@@ -244,7 +320,9 @@ export default function ChatsPage({
   // Пересылка: открываем выбор чата, затем отправляем туда текст с пометкой автора.
   async function forwardTo(target: ChatUser) {
     if (!forwarding) return;
-    const author = forwarding.fromMe ? meName : activeUser?.name || '';
+    const author = forwarding.fromMe
+      ? meName
+      : activeUser?.name || (forwarding as GroupMessageItem).sender?.name || '';
     try {
       await api.chatSend(target.id, forwarding.text, { forwardedFrom: author });
       setForwarding(null);
@@ -258,6 +336,27 @@ export default function ChatsPage({
     setEditing(null);
     setReplyTo(null);
     setInput('');
+  }
+
+  // Единый список: личные чаты + группы, по времени последнего сообщения.
+  const conversations = [
+    ...chats.map((c) => ({ kind: 'dm' as const, sortAt: c.last?.createdAt || '', dm: c })),
+    ...groups.map((g) => ({ kind: 'group' as const, sortAt: g.last?.createdAt || '', group: g })),
+  ].sort((a, b) => b.sortAt.localeCompare(a.sortAt));
+
+  // После изменений группы обновляем состояние. stillOpen=false — мы вышли/удалили
+  // группу: закрываем настройки и сам чат. Иначе (добавили/удалили участника,
+  // переименовали) — настройки оставляем открытыми, только обновляем данные.
+  function afterGroupChange(stillOpen: boolean) {
+    loadChats();
+    if (!stillOpen) {
+      setShowSettings(false);
+      setActiveGroup(null);
+      activeGroupRef.current = null;
+      setMobilePane('list');
+    } else if (activeGroup) {
+      loadGroupMessages(activeGroup.id);
+    }
   }
 
   return (
@@ -281,6 +380,16 @@ export default function ChatsPage({
 
         {newChat ? (
           <>
+            <button
+              type="button"
+              className="chats-create-group"
+              onClick={() => {
+                setCreating(true);
+                setNewChat(false);
+              }}
+            >
+              <span className="chats-create-group-ic">👥</span> Создать группу
+            </button>
             <div className="chats-search">
               <input
                 placeholder={t('chats.searchPh')}
@@ -310,42 +419,70 @@ export default function ChatsPage({
           </>
         ) : (
           <div className="chats-items">
-            {chats.length === 0 && (
+            {conversations.length === 0 && (
               <div className="chats-empty">
                 {t('chats.empty')}
                 <br />
                 {t('chats.tapPlus')}
               </div>
             )}
-            {chats.map((c) => (
-              <button
-                key={c.user.id}
-                type="button"
-                className={`chat-item ${c.user.id === activeUserId ? 'chat-item--active' : ''}`}
-                onClick={() => openChat(c.user)}
-              >
-                <span className="chat-av" style={avatarStyle(c.user)}>
-                  {c.user.avatar ? '' : c.user.letter}
-                  {c.user.online && <span className="chat-online-dot" />}
-                </span>
-                <span className="chat-item-mid">
-                  <span className="chat-item-name">{c.user.name}</span>
-                  <span className="chat-item-last">
-                    {c.last ? (c.last.fromMe ? t('chats.you') : '') + c.last.text : t('chats.noMessages')}
+            {conversations.map((it) =>
+              it.kind === 'dm' ? (
+                <button
+                  key={`dm-${it.dm.user.id}`}
+                  type="button"
+                  className={`chat-item ${it.dm.user.id === activeUserId ? 'chat-item--active' : ''}`}
+                  onClick={() => openChat(it.dm.user)}
+                >
+                  <span className="chat-av" style={avatarStyle(it.dm.user)}>
+                    {it.dm.user.avatar ? '' : it.dm.user.letter}
+                    {it.dm.user.online && <span className="chat-online-dot" />}
                   </span>
-                </span>
-                <span className="chat-item-right">
-                  <span className="chat-item-time">{timeShort(c.last?.createdAt, locale)}</span>
-                  {c.unread ? <span className="chat-unread">{c.unread}</span> : null}
-                </span>
-              </button>
-            ))}
+                  <span className="chat-item-mid">
+                    <span className="chat-item-name">{it.dm.user.name}</span>
+                    <span className="chat-item-last">
+                      {it.dm.last
+                        ? (it.dm.last.fromMe ? t('chats.you') : '') + it.dm.last.text
+                        : t('chats.noMessages')}
+                    </span>
+                  </span>
+                  <span className="chat-item-right">
+                    <span className="chat-item-time">{timeShort(it.dm.last?.createdAt, locale)}</span>
+                    {it.dm.unread ? <span className="chat-unread">{it.dm.unread}</span> : null}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  key={`g-${it.group.id}`}
+                  type="button"
+                  className={`chat-item ${it.group.id === activeGroup?.id ? 'chat-item--active' : ''}`}
+                  onClick={() => openGroup(it.group)}
+                >
+                  <span className="chat-av chat-av--group" style={{ background: it.group.color }}>
+                    {it.group.letter}
+                    <span className="chat-group-count" title="участников">{it.group.memberCount}</span>
+                  </span>
+                  <span className="chat-item-mid">
+                    <span className="chat-item-name">{it.group.name}</span>
+                    <span className="chat-item-last">
+                      {it.group.last
+                        ? (it.group.last.fromMe ? t('chats.you') : it.group.last.author + ': ') + it.group.last.text
+                        : `${it.group.memberCount} участников`}
+                    </span>
+                  </span>
+                  <span className="chat-item-right">
+                    <span className="chat-item-time">{timeShort(it.group.last?.createdAt, locale)}</span>
+                    {it.group.unread ? <span className="chat-unread">{it.group.unread}</span> : null}
+                  </span>
+                </button>
+              ),
+            )}
           </div>
         )}
       </aside>
 
       <section className="chat-view">
-        {activeUser ? (
+        {activeUser || activeGroup ? (
           <>
             <header className="chat-view-head">
               <button
@@ -356,21 +493,48 @@ export default function ChatsPage({
               >
                 ‹
               </button>
-              <span className="chat-av chat-av--sm" style={avatarStyle(activeUser)}>
-                {activeUser.avatar ? '' : activeUser.letter}
-                {activeUser.online && <span className="chat-online-dot" />}
-              </span>
-              <button
-                type="button"
-                className="chat-view-id chat-view-id--btn"
-                onClick={() => onOpenProfile?.(activeUser.id)}
-                title={t('chats.openProfile')}
-              >
-                <span className="chat-view-name">{activeUser.name}</span>
-                <span className={`chat-view-status${activeUser.online ? ' chat-view-status--online' : ''}`}>
-                  {activeUser.online ? t('common.online') : `@${activeUser.handle}`}
-                </span>
-              </button>
+              {activeGroup ? (
+                <>
+                  <span className="chat-av chat-av--sm chat-av--group" style={{ background: activeGroup.color }}>
+                    {activeGroup.letter}
+                  </span>
+                  <button
+                    type="button"
+                    className="chat-view-id chat-view-id--btn"
+                    onClick={() => setShowSettings(true)}
+                    title="Настройки группы"
+                  >
+                    <span className="chat-view-name">{activeGroup.name}</span>
+                    <span className="chat-view-status">{activeGroup.memberCount} участников</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="chat-group-gear"
+                    onClick={() => setShowSettings(true)}
+                    aria-label="Настройки группы"
+                  >
+                    ⋯
+                  </button>
+                </>
+              ) : activeUser ? (
+                <>
+                  <span className="chat-av chat-av--sm" style={avatarStyle(activeUser)}>
+                    {activeUser.avatar ? '' : activeUser.letter}
+                    {activeUser.online && <span className="chat-online-dot" />}
+                  </span>
+                  <button
+                    type="button"
+                    className="chat-view-id chat-view-id--btn"
+                    onClick={() => onOpenProfile?.(activeUser.id)}
+                    title={t('chats.openProfile')}
+                  >
+                    <span className="chat-view-name">{activeUser.name}</span>
+                    <span className={`chat-view-status${activeUser.online ? ' chat-view-status--online' : ''}`}>
+                      {activeUser.online ? t('common.online') : `@${activeUser.handle}`}
+                    </span>
+                  </button>
+                </>
+              ) : null}
             </header>
 
             <div className="chat-messages">
@@ -401,12 +565,21 @@ export default function ChatsPage({
                         onClick={() => setMenuMsg(m)}
                         title={t('chats.msgActions')}
                       >
+                        {isGroup && !m.fromMe && !sameAsPrev && (m as GroupMessageItem).sender && (
+                          <span className="chat-sender" style={{ color: (m as GroupMessageItem).sender!.color }}>
+                            {(m as GroupMessageItem).sender!.name}
+                          </span>
+                        )}
                         {m.forwardedFrom && (
                           <span className="chat-fwd">{t('chats.fwdFrom', { name: m.forwardedFrom })}</span>
                         )}
                         {m.replyTo && (
                           <span className="chat-quote">
-                            <span className="chat-quote-author">{m.replyTo.fromMe ? t('chats.youShort') : activeUser.name}</span>
+                            <span className="chat-quote-author">
+                              {m.replyTo.fromMe
+                                ? t('chats.youShort')
+                                : (isGroup ? (m.replyTo as { author?: string }).author : activeUser?.name) || ''}
+                            </span>
                             <span className="chat-quote-text">{m.replyTo.text}</span>
                           </span>
                         )}
@@ -433,7 +606,11 @@ export default function ChatsPage({
                   <span className="chat-compose-title">
                     {editing
                       ? t('chats.editing')
-                      : t('chats.replyTo', { name: replyTo!.fromMe ? t('chats.replySelf') : activeUser.name })}
+                      : t('chats.replyTo', {
+                          name: replyTo!.fromMe
+                            ? t('chats.replySelf')
+                            : (isGroup ? (replyTo as GroupMessageItem).sender?.name : activeUser?.name) || '',
+                        })}
                   </span>
                   <span className="chat-compose-text">{(editing || replyTo)!.text}</span>
                 </span>
@@ -528,6 +705,30 @@ export default function ChatsPage({
             </div>
           </div>
         </>
+      )}
+
+      {/* Настройки группы */}
+      {showSettings && activeGroup && (
+        <GroupSettings
+          group={activeGroup}
+          meId={meId}
+          onClose={() => setShowSettings(false)}
+          onChanged={afterGroupChange}
+          onOpenProfile={onOpenProfile}
+          onToast={setToast}
+        />
+      )}
+
+      {/* Создание группы */}
+      {creating && (
+        <CreateGroup
+          onClose={() => setCreating(false)}
+          onCreated={(g) => {
+            setCreating(false);
+            loadChats();
+            openGroup(g);
+          }}
+        />
       )}
 
       {toast && <div className="chat-mini-toast">{toast}</div>}
