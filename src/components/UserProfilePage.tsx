@@ -1,15 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type ChatUser, type PublicUser, type Relation } from '../utils/api';
-
-const MONTHS = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
-];
-function sinceFrom(createdAt: string): string {
-  const d = new Date(createdAt);
-  if (Number.isNaN(d.getTime())) return '';
-  return `С ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-}
+import { useI18n } from '../i18n';
+import AvatarLightbox from './AvatarLightbox';
+import { localizeCity } from './profileFields';
 
 export default function UserProfilePage({
   userId,
@@ -20,10 +13,12 @@ export default function UserProfilePage({
   onBack: () => void;
   onMessage: (u: ChatUser) => void;
 }) {
+  const { t, lang, formatBirthday, formatAge, formatSince } = useI18n();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [relation, setRelation] = useState<Relation>('none');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [zoom, setZoom] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -31,9 +26,9 @@ export default function UserProfilePage({
       setUser(data.user);
       setRelation(data.relation);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : t('auth.error'));
     }
-  }, [userId]);
+  }, [userId, t]);
 
   useEffect(() => {
     load();
@@ -56,49 +51,73 @@ export default function UserProfilePage({
 
   const friendLabel =
     relation === 'friends'
-      ? 'Удалить из друзей'
+      ? t('up.removeFriend')
       : relation === 'outgoing'
-        ? 'Отменить заявку'
+        ? t('up.cancelRequest')
         : relation === 'incoming'
-          ? 'Принять заявку'
-          : '+ В друзья';
+          ? t('up.acceptRequest')
+          : t('up.addFriend');
 
   const avatarStyle = user?.avatar
     ? { backgroundImage: `url(${user.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: user?.color };
 
+  // Блок «Информация» — только заполненные строки.
+  const infoRows: { icon: string; label: string; value: string }[] = [];
+  if (user) {
+    const birthdayStr = user.birthDay
+      ? [
+          formatBirthday(user.birthDay, user.birthMonth, user.birthYear),
+          formatAge(user.birthDay, user.birthMonth, user.birthYear),
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : '';
+    if (birthdayStr) infoRows.push({ icon: '🎂', label: t('profile.birthday'), value: birthdayStr });
+    if (user.gender) infoRows.push({ icon: '⚧', label: t('profile.gender'), value: t(`gender.${user.gender}`) });
+    if (user.city) infoRows.push({ icon: '📍', label: t('profile.cityLabel'), value: localizeCity(user.city, lang) });
+    const since = formatSince(user.createdAt);
+    if (since) infoRows.push({ icon: '🗓', label: t('profile.joined'), value: since });
+  }
+
   return (
     <div className="page-scroll">
       <div className="up-page">
         <button className="ep-back" onClick={onBack}>
-          ← Назад
+          {t('common.back')}
         </button>
 
         {error && <div className="fr-empty">{error}</div>}
 
         {user && (
           <>
-            <div className="up-head">
-              <div className="up-avatar" style={avatarStyle}>
+            <div className="up-cover" style={{ background: user.color }}>
+              <span className="pp-cover-tint" />
+            </div>
+
+            <div className="up-head up-head--fb">
+              <button
+                type="button"
+                className="up-avatar up-avatar--btn"
+                style={avatarStyle}
+                onClick={() => setZoom(true)}
+                aria-label={user.name}
+              >
                 {user.avatar ? '' : user.letter}
                 {user.online && <span className="fr-online-dot" />}
-              </div>
+              </button>
               <h1 className="up-name">{user.name}</h1>
               <div className="up-handle">
                 @{user.handle} · #{String(user.id).padStart(5, '0')}
               </div>
               <div className="up-meta">
                 {user.online ? (
-                  <span className="up-online">● в сети</span>
+                  <span className="up-online">● {t('common.online')}</span>
                 ) : (
-                  <span className="up-offline">не в сети</span>
+                  <span className="up-offline">{t('common.offline')}</span>
                 )}
-                {user.city ? <span> · 📍 {user.city}</span> : null}
-                {sinceFrom(user.createdAt) ? <span> · {sinceFrom(user.createdAt)}</span> : null}
               </div>
             </div>
-
-            {user.bio && <p className="up-bio">{user.bio}</p>}
 
             {relation !== 'self' && (
               <div className="up-actions">
@@ -116,7 +135,7 @@ export default function UserProfilePage({
                     })
                   }
                 >
-                  Написать
+                  {t('common.message')}
                 </button>
                 <button
                   className={`up-btn${relation === 'friends' ? ' up-btn--danger' : ''}`}
@@ -127,9 +146,44 @@ export default function UserProfilePage({
                 </button>
               </div>
             )}
+
+            <section className="pp-section up-section">
+              <div className="pp-section-label">{t('profile.intro')}</div>
+              <div className="pp-about">
+                {user.bio ? user.bio : <span className="pp-muted">{t('profile.noBio')}</span>}
+              </div>
+              {infoRows.length > 0 && (
+                <div className="pp-info">
+                  {infoRows.map((r) => (
+                    <div className="pp-info-row" key={r.label}>
+                      <span className="pp-info-ic">{r.icon}</span>
+                      <span className="pp-info-label">{r.label}</span>
+                      <span className="pp-info-value">{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {user.interests.length > 0 && (
+                <div className="pp-interests">
+                  {user.interests.map((it) => (
+                    <span className="pp-interest" key={it}>{it}</span>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>
+
+      {zoom && user && (
+        <AvatarLightbox
+          avatar={user.avatar}
+          color={user.color}
+          letter={user.letter}
+          name={user.name}
+          onClose={() => setZoom(false)}
+        />
+      )}
     </div>
   );
 }

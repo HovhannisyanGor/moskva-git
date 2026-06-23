@@ -29,6 +29,10 @@ export interface ApiUser {
   avatar: string;
   role: 'user' | 'admin';
   show_online: number; // 1 = показывать «в сети» другим (приватность)
+  birthdate: string; // 'YYYY-MM-DD' или '' — дата рождения
+  gender: string; // '' | 'male' | 'female' | 'other'
+  interests: string; // интересы через запятую
+  show_birthyear: number; // 1 = показывать год рождения и возраст другим
   created_at: string;
 }
 
@@ -43,6 +47,11 @@ export interface PublicUser {
   online: boolean;
   bio: string;
   city: string;
+  gender: string; // '' | 'male' | 'female' | 'other'
+  interests: string[]; // интересы списком
+  birthDay: number; // день рождения (0, если не указан)
+  birthMonth: number; // месяц (0, если не указан)
+  birthYear: number | null; // год — null, если скрыт приватностью или не указан
   createdAt: string;
 }
 export type Relation = 'self' | 'friends' | 'incoming' | 'outgoing' | 'none';
@@ -154,7 +163,7 @@ export const api = {
     return data.user;
   },
 
-  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar' | 'show_online'>>) {
+  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar' | 'show_online' | 'birthdate' | 'gender' | 'show_birthyear'>> & { interests?: string | string[] }) {
     const data = await request<{ user: ApiUser }>('/api/auth/me', {
       method: 'PATCH',
       body: patch,

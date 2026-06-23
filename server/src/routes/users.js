@@ -27,6 +27,19 @@ usersRouter.get('/search', (req, res) => {
   res.json({ users: rows.map(toChatUser) });
 });
 
+// Разбираем дату рождения для публичного профиля. Год отдаём только если
+// пользователь не скрыл его в приватности (show_birthyear). Без года другой
+// человек видит лишь день и месяц — возраст по ним не вычислить.
+function birthdayPublic(u) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(u.birthdate || '');
+  if (!m) return { birthDay: 0, birthMonth: 0, birthYear: null };
+  return {
+    birthDay: Number(m[3]),
+    birthMonth: Number(m[2]),
+    birthYear: u.show_birthyear === 0 ? null : Number(m[1]),
+  };
+}
+
 // Статус дружбы между me и other: self | friends | outgoing | incoming | none.
 function relationFor(me, other) {
   if (me === other) return 'self';
@@ -57,6 +70,9 @@ usersRouter.get('/:id', (req, res) => {
       online: u.show_online === 0 ? false : isOnline(u),
       bio: u.bio || '',
       city: u.city || '',
+      gender: u.gender || '',
+      interests: (u.interests || '').split(',').map((s) => s.trim()).filter(Boolean),
+      ...birthdayPublic(u),
       createdAt: u.created_at,
     },
     relation: relationFor(req.userId, id),

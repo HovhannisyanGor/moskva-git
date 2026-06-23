@@ -1,4 +1,5 @@
-import { PLACES, CATEGORY_LABELS, CATEGORY_COLORS } from '../data/places';
+import { PLACES, CATEGORY_COLORS } from '../data/places';
+import { useI18n } from '../i18n';
 
 interface FavoritesPageProps {
   favorites: number[];
@@ -6,6 +7,7 @@ interface FavoritesPageProps {
 }
 
 export default function FavoritesPage({ favorites, onPlaceClick }: FavoritesPageProps) {
+  const { t } = useI18n();
   // Сохраняем порядок добавления (как в списке favorites).
   const places = favorites
     .map((id) => PLACES.find((p) => p.id === id))
@@ -14,12 +16,10 @@ export default function FavoritesPage({ favorites, onPlaceClick }: FavoritesPage
   return (
     <div className="page-scroll">
       <div className="fav-page">
-        <h1 className="fav-title">Избранное</h1>
+        <h1 className="fav-title">{t('fav.title')}</h1>
 
         {places.length === 0 ? (
-          <div className="fav-empty">
-            Пока пусто. Открой место на карте и нажми ★, чтобы сохранить его сюда.
-          </div>
+          <div className="fav-empty">{t('fav.empty')}</div>
         ) : (
           <div className="fav-list">
             {places.map((p) => {
@@ -30,7 +30,7 @@ export default function FavoritesPage({ favorites, onPlaceClick }: FavoritesPage
                   <span className="fav-item-mid">
                     <span className="fav-item-name">{p.name}</span>
                     <span className="fav-item-sub" style={{ color }}>
-                      {CATEGORY_LABELS[p.category]}
+                      {t(`category.${p.category}`)}
                     </span>
                   </span>
                   <span className="fav-arrow">→</span>

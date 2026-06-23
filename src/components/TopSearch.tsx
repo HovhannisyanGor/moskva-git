@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, type ChatUser } from '../utils/api';
-import { PLACES, CATEGORY_LABELS, CATEGORY_COLORS } from '../data/places';
+import { PLACES, CATEGORY_COLORS } from '../data/places';
 import type { Place } from '../types';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 // Универсальный поиск сверху: люди (через API) + места (по списку PLACES).
 export default function TopSearch({
@@ -12,6 +13,7 @@ export default function TopSearch({
   onOpenProfile: (id: number) => void;
   onOpenPlace: (p: Place) => void;
 }) {
+  const { t } = useI18n();
   const [q, setQ] = useState('');
   const [people, setPeople] = useState<ChatUser[]>([]);
   const [open, setOpen] = useState(false);
@@ -77,7 +79,7 @@ export default function TopSearch({
       </span>
       <input
         className="top-search-input"
-        placeholder="Поиск людей и мест…"
+        placeholder={t('common.search')}
         value={q}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setOpen(true)}
@@ -85,11 +87,11 @@ export default function TopSearch({
 
       {open && query.length >= 1 && (
         <div className="top-search-pop">
-          {!hasResults && <div className="top-search-empty">Ничего не нашлось</div>}
+          {!hasResults && <div className="top-search-empty">{t('search.empty')}</div>}
 
           {people.length > 0 && (
             <>
-              <div className="top-search-label">Люди</div>
+              <div className="top-search-label">{t('search.people')}</div>
               {people.map((u) => (
                 <button className="top-search-row" key={`u${u.id}`} onClick={() => choosePerson(u)}>
                   <span
@@ -114,13 +116,13 @@ export default function TopSearch({
 
           {places.length > 0 && (
             <>
-              <div className="top-search-label">Места</div>
+              <div className="top-search-label">{t('search.places')}</div>
               {places.map((p) => (
                 <button className="top-search-row" key={`p${p.id}`} onClick={() => choosePlace(p)}>
                   <span className="top-search-dot" style={{ background: CATEGORY_COLORS[p.category] }} />
                   <span className="top-search-row-mid">
                     <span className="top-search-row-name">{p.name}</span>
-                    <span className="top-search-row-sub">{CATEGORY_LABELS[p.category]}</span>
+                    <span className="top-search-row-sub">{t(`category.${p.category}`)}</span>
                   </span>
                 </button>
               ))}

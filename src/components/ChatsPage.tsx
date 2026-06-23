@@ -1,30 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type ChatListItem, type ChatMessageItem, type ChatUser } from '../utils/api';
+import { useI18n } from '../i18n';
 
 // Короткое время: сегодня — часы:минуты, иначе — дата.
-function timeShort(iso: string | undefined): string {
+function timeShort(iso: string | undefined, locale: string): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const sameDay = d.toDateString() === new Date().toDateString();
   return sameDay
-    ? d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    ? d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
 }
 
 function dayKey(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? '' : d.toDateString();
 }
-function dayLabel(iso: string) {
+function dayLabel(
+  iso: string,
+  locale: string,
+  todayLabel: string,
+  yesterdayLabel: string,
+) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const today = new Date();
   const yest = new Date();
   yest.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Сегодня';
-  if (d.toDateString() === yest.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  if (d.toDateString() === today.toDateString()) return todayLabel;
+  if (d.toDateString() === yest.toDateString()) return yesterdayLabel;
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
 }
 
 function avatarStyle(u: { avatar: string; color: string }) {
@@ -48,6 +54,7 @@ export default function ChatsPage({
   onOpenedWith,
   onOpenProfile,
 }: ChatsPageProps) {
+  const { t, locale } = useI18n();
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
@@ -115,6 +122,14 @@ export default function ChatsPage({
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, activeUserId]);
+
+  // Открыли диалог — сразу ставим курсор в поле ввода, чтобы можно было печатать
+  // не нажимая на него отдельно. На мобиле фокус ещё и поднимает клавиатуру.
+  useEffect(() => {
+    if (activeUserId == null) return;
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [activeUserId]);
 
   // Сообщаем приложению, какой чат открыт — чтобы по нему не показывать всплывашку.
   useEffect(() => {
@@ -205,14 +220,14 @@ export default function ChatsPage({
     setMenuMsg(null);
     try {
       await navigator.clipboard.writeText(m.text);
-      setToast('Скопировано');
+      setToast(t('chats.copied'));
     } catch {
-      setToast('Не удалось скопировать');
+      setToast(t('chats.copyFail'));
     }
   }
   async function deleteMsg(m: ChatMessageItem) {
     setMenuMsg(null);
-    if (!window.confirm('Удалить сообщение? Действие необратимо.')) return;
+    if (!window.confirm(t('chats.deleteConfirm'))) return;
     try {
       await api.chatDeleteMessage(m.id);
       setMessages((prev) => prev.filter((x) => x.id !== m.id));
@@ -223,7 +238,7 @@ export default function ChatsPage({
       }
       loadChats();
     } catch {
-      setToast('Не удалось удалить');
+      setToast(t('chats.deleteFail'));
     }
   }
   // Пересылка: открываем выбор чата, затем отправляем туда текст с пометкой автора.
@@ -235,7 +250,7 @@ export default function ChatsPage({
       setForwarding(null);
       openChat(target);
     } catch {
-      setToast('Не удалось переслать');
+      setToast(t('chats.forwardFail'));
     }
   }
 
@@ -249,7 +264,7 @@ export default function ChatsPage({
     <div className={`chats-page ${mobilePane === 'chat' ? 'chats-page--chat' : ''}`}>
       <aside className="chats-list">
         <div className="chats-list-head">
-          <span className="chats-title">{newChat ? 'Новый чат' : 'Сообщения'}</span>
+          <span className="chats-title">{newChat ? t('chats.newChat') : t('chats.messages')}</span>
           <button
             className="chats-new"
             type="button"
@@ -258,7 +273,7 @@ export default function ChatsPage({
               setSearchQ('');
               setResults([]);
             }}
-            aria-label={newChat ? 'Закрыть' : 'Новый чат'}
+            aria-label={newChat ? t('common.close') : t('chats.newChat')}
           >
             {newChat ? '×' : '+'}
           </button>
@@ -268,16 +283,16 @@ export default function ChatsPage({
           <>
             <div className="chats-search">
               <input
-                placeholder="🔍 Ник, имя или ID…"
+                placeholder={t('chats.searchPh')}
                 value={searchQ}
                 onChange={(e) => onSearch(e.target.value)}
                 autoFocus
               />
             </div>
             <div className="chats-items">
-              {searchQ.trim().length < 1 && <div className="chats-empty">Введи ник, имя или ID</div>}
+              {searchQ.trim().length < 1 && <div className="chats-empty">{t('chats.enterQuery')}</div>}
               {searchQ.trim().length >= 1 && results.length === 0 && (
-                <div className="chats-empty">Никого не нашлось</div>
+                <div className="chats-empty">{t('chats.noneFound')}</div>
               )}
               {results.map((u) => (
                 <button key={u.id} type="button" className="chat-item" onClick={() => openChat(u)}>
@@ -297,9 +312,9 @@ export default function ChatsPage({
           <div className="chats-items">
             {chats.length === 0 && (
               <div className="chats-empty">
-                Пока нет переписок.
+                {t('chats.empty')}
                 <br />
-                Нажми «+», чтобы начать чат.
+                {t('chats.tapPlus')}
               </div>
             )}
             {chats.map((c) => (
@@ -316,11 +331,11 @@ export default function ChatsPage({
                 <span className="chat-item-mid">
                   <span className="chat-item-name">{c.user.name}</span>
                   <span className="chat-item-last">
-                    {c.last ? (c.last.fromMe ? 'Вы: ' : '') + c.last.text : 'Нет сообщений'}
+                    {c.last ? (c.last.fromMe ? t('chats.you') : '') + c.last.text : t('chats.noMessages')}
                   </span>
                 </span>
                 <span className="chat-item-right">
-                  <span className="chat-item-time">{timeShort(c.last?.createdAt)}</span>
+                  <span className="chat-item-time">{timeShort(c.last?.createdAt, locale)}</span>
                   {c.unread ? <span className="chat-unread">{c.unread}</span> : null}
                 </span>
               </button>
@@ -337,7 +352,7 @@ export default function ChatsPage({
                 className="chat-back"
                 type="button"
                 onClick={() => setMobilePane('list')}
-                aria-label="Назад к чатам"
+                aria-label={t('chats.back')}
               >
                 ‹
               </button>
@@ -349,19 +364,19 @@ export default function ChatsPage({
                 type="button"
                 className="chat-view-id chat-view-id--btn"
                 onClick={() => onOpenProfile?.(activeUser.id)}
-                title="Открыть профиль"
+                title={t('chats.openProfile')}
               >
                 <span className="chat-view-name">{activeUser.name}</span>
                 <span className={`chat-view-status${activeUser.online ? ' chat-view-status--online' : ''}`}>
-                  {activeUser.online ? 'в сети' : `@${activeUser.handle}`}
+                  {activeUser.online ? t('common.online') : `@${activeUser.handle}`}
                 </span>
               </button>
             </header>
 
             <div className="chat-messages">
-              {loading && messages.length === 0 && <div className="chats-empty">Загрузка…</div>}
+              {loading && messages.length === 0 && <div className="chats-empty">{t('common.loading')}</div>}
               {!loading && messages.length === 0 && (
-                <div className="chats-empty">Сообщений пока нет — напиши первым 👋</div>
+                <div className="chats-empty">{t('chats.firstMessage')}</div>
               )}
               {messages.map((m, i) => {
                 const prev = messages[i - 1];
@@ -372,7 +387,11 @@ export default function ChatsPage({
                   !!next && next.fromMe === m.fromMe && dayKey(next.createdAt) === dayKey(m.createdAt);
                 return (
                   <div key={m.id}>
-                    {showDay && <div className="chat-day">{dayLabel(m.createdAt)}</div>}
+                    {showDay && (
+                      <div className="chat-day">
+                        {dayLabel(m.createdAt, locale, t('chats.today'), t('chats.yesterday'))}
+                      </div>
+                    )}
                     <div
                       className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}${sameAsPrev ? ' chat-msg--grouped' : ''}`}
                     >
@@ -380,14 +399,14 @@ export default function ChatsPage({
                         type="button"
                         className="chat-bubble"
                         onClick={() => setMenuMsg(m)}
-                        title="Действия с сообщением"
+                        title={t('chats.msgActions')}
                       >
                         {m.forwardedFrom && (
-                          <span className="chat-fwd">↪ Переслано от {m.forwardedFrom}</span>
+                          <span className="chat-fwd">{t('chats.fwdFrom', { name: m.forwardedFrom })}</span>
                         )}
                         {m.replyTo && (
                           <span className="chat-quote">
-                            <span className="chat-quote-author">{m.replyTo.fromMe ? 'Вы' : activeUser.name}</span>
+                            <span className="chat-quote-author">{m.replyTo.fromMe ? t('chats.youShort') : activeUser.name}</span>
                             <span className="chat-quote-text">{m.replyTo.text}</span>
                           </span>
                         )}
@@ -395,8 +414,8 @@ export default function ChatsPage({
                       </button>
                       {!sameAsNext && (
                         <div className="chat-msg-time">
-                          {m.edited && <span className="chat-edited">изменено</span>}
-                          {timeShort(m.createdAt)}
+                          {m.edited && <span className="chat-edited">{t('chats.edited')}</span>}
+                          {timeShort(m.createdAt, locale)}
                         </div>
                       )}
                     </div>
@@ -412,11 +431,13 @@ export default function ChatsPage({
                 <span className="chat-compose-ic">{editing ? '✎' : '↩'}</span>
                 <span className="chat-compose-body">
                   <span className="chat-compose-title">
-                    {editing ? 'Редактирование' : `Ответ ${replyTo!.fromMe ? 'себе' : activeUser.name}`}
+                    {editing
+                      ? t('chats.editing')
+                      : t('chats.replyTo', { name: replyTo!.fromMe ? t('chats.replySelf') : activeUser.name })}
                   </span>
                   <span className="chat-compose-text">{(editing || replyTo)!.text}</span>
                 </span>
-                <button className="chat-compose-x" type="button" onClick={cancelEditReply} aria-label="Отмена">
+                <button className="chat-compose-x" type="button" onClick={cancelEditReply} aria-label={t('common.cancel')}>
                   ×
                 </button>
               </div>
@@ -425,7 +446,7 @@ export default function ChatsPage({
             <div className="chat-input">
               <input
                 ref={inputRef}
-                placeholder={editing ? 'Изменить сообщение…' : 'Сообщение...'}
+                placeholder={editing ? t('chats.editPh') : t('chats.messagePh')}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -438,14 +459,14 @@ export default function ChatsPage({
                 type="button"
                 onClick={send}
                 disabled={sending || !input.trim()}
-                aria-label={editing ? 'Сохранить' : 'Отправить'}
+                aria-label={editing ? t('common.save') : t('common.message')}
               >
                 {editing ? '✓' : '➤'}
               </button>
             </div>
           </>
         ) : (
-          <div className="chat-empty-view">Выбери чат или начни новый кнопкой «+»</div>
+          <div className="chat-empty-view">{t('chats.pickChat')}</div>
         )}
       </section>
 
@@ -456,26 +477,26 @@ export default function ChatsPage({
           <div className="msg-menu" role="menu">
             <div className="msg-menu-preview">{menuMsg.text}</div>
             <button type="button" className="msg-menu-item" onClick={() => startReply(menuMsg)}>
-              <span className="msg-menu-ic">↩</span> Ответить
+              <span className="msg-menu-ic">↩</span> {t('chats.reply')}
             </button>
             <button type="button" className="msg-menu-item" onClick={() => copyMsg(menuMsg)}>
-              <span className="msg-menu-ic">⧉</span> Копировать
+              <span className="msg-menu-ic">⧉</span> {t('chats.copy')}
             </button>
             <button type="button" className="msg-menu-item" onClick={() => { setForwarding(menuMsg); setMenuMsg(null); }}>
-              <span className="msg-menu-ic">↪</span> Переслать
+              <span className="msg-menu-ic">↪</span> {t('chats.forward')}
             </button>
             {menuMsg.fromMe && (
               <button type="button" className="msg-menu-item" onClick={() => startEdit(menuMsg)}>
-                <span className="msg-menu-ic">✎</span> Изменить
+                <span className="msg-menu-ic">✎</span> {t('chats.edit')}
               </button>
             )}
             {menuMsg.fromMe && (
               <button type="button" className="msg-menu-item msg-menu-item--danger" onClick={() => deleteMsg(menuMsg)}>
-                <span className="msg-menu-ic">🗑</span> Удалить
+                <span className="msg-menu-ic">🗑</span> {t('chats.delete')}
               </button>
             )}
             <button type="button" className="msg-menu-cancel" onClick={() => setMenuMsg(null)}>
-              Отмена
+              {t('common.cancel')}
             </button>
           </div>
         </>
@@ -487,12 +508,12 @@ export default function ChatsPage({
           <div className="msg-menu-backdrop" onClick={() => setForwarding(null)} />
           <div className="fwd-picker">
             <div className="fwd-picker-head">
-              <span>Переслать в чат</span>
-              <button type="button" onClick={() => setForwarding(null)} aria-label="Закрыть">×</button>
+              <span>{t('chats.forwardTitle')}</span>
+              <button type="button" onClick={() => setForwarding(null)} aria-label={t('common.close')}>×</button>
             </div>
             <div className="fwd-picker-preview">«{forwarding.text}»</div>
             <div className="fwd-picker-list">
-              {chats.length === 0 && <div className="chats-empty">Нет доступных чатов</div>}
+              {chats.length === 0 && <div className="chats-empty">{t('chats.noChats')}</div>}
               {chats.map((c) => (
                 <button key={c.user.id} type="button" className="chat-item" onClick={() => forwardTo(c.user)}>
                   <span className="chat-av chat-av--sm" style={avatarStyle(c.user)}>

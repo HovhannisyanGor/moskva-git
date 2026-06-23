@@ -22,6 +22,7 @@ import { useFavorites } from './hooks/useFavorites';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useTheme } from './hooks/useTheme';
 import { useChatNotifications } from './hooks/useChatNotifications';
+import { useI18n } from './i18n';
 import type { Place, Route, View } from './types';
 import { PLACES } from './data/places';
 import { api, getToken, clearToken, type ApiUser, type ChatUser } from './utils/api';
@@ -56,12 +57,12 @@ const ICON = {
   ),
 };
 
-const MOBILE_NAV: { view: View; label: string; icon: ReactNode }[] = [
-  { view: 'map', label: 'Карта', icon: ICON.map },
-  { view: 'achievements', label: 'Награды', icon: ICON.trophy },
-  { view: 'friends', label: 'Друзья', icon: ICON.friends },
-  { view: 'chats', label: 'Чаты', icon: ICON.chats },
-  { view: 'profile', label: 'Профиль', icon: ICON.user },
+const MOBILE_NAV: { view: View; labelKey: string; icon: ReactNode }[] = [
+  { view: 'map', labelKey: 'nav.map', icon: ICON.map },
+  { view: 'achievements', labelKey: 'nav.awards', icon: ICON.trophy },
+  { view: 'friends', labelKey: 'nav.friends', icon: ICON.friends },
+  { view: 'chats', labelKey: 'nav.chats', icon: ICON.chats },
+  { view: 'profile', labelKey: 'nav.profile', icon: ICON.user },
 ];
 
 export default function App() {
@@ -115,6 +116,7 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const theme = useTheme();
+  const { t, lang } = useI18n();
   // Непрочитанные сообщения (для бейджа) + всплывашка о новом сообщении.
   const { totalUnread, toast, dismissToast } = useChatNotifications(!!currentUser, activeChatUser);
   // Нижняя шторка: 0 = свёрнуто (пик), 1 = полностью раскрыто
@@ -231,7 +233,7 @@ export default function App() {
         className="app"
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}
       >
-        <div style={{ opacity: 0.6 }}>Загрузка…</div>
+        <div style={{ opacity: 0.6 }}>{t('common.loading')}</div>
       </div>
     );
   }
@@ -280,7 +282,7 @@ export default function App() {
           <ProfilePage
             user={displayUser}
             badges={displayBadges(unlockedBadges)}
-            recent={recentPlaces(visits)}
+            recent={recentPlaces(visits, lang)}
             onEdit={() => navigate('edit-profile')}
             onOpenFriends={() => navigate('friends')}
           />
@@ -337,7 +339,7 @@ export default function App() {
               onPointerUp={isMobile ? onSheetUp : undefined}
             >
               {isMobile && (
-                <div className="sheet-grabber" role="button" aria-label={sheetOpen ? 'Свернуть' : 'Развернуть'}>
+                <div className="sheet-grabber" role="button" aria-label={sheetOpen ? t('common.collapse') : t('common.expand')}>
                   <span className="sheet-grabber-bar" />
                 </div>
               )}
@@ -345,12 +347,12 @@ export default function App() {
                 <div className="sheet-peek">
                   <button className="sheet-peek-search" onClick={() => setSnap(1)}>
                     <span className="sheet-peek-spark">✦</span>
-                    <span>Спросите AI — куда сходить?</span>
+                    <span>{t('ai.peek')}</span>
                   </button>
                   <button
                     className="sheet-peek-filter"
                     onClick={() => setSnap(1)}
-                    aria-label="Фильтры"
+                    aria-label={t('common.filters')}
                   >
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
                       <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /><circle cx="9" cy="7" r="2.3" fill="var(--bg)" /><circle cx="15" cy="12" r="2.3" fill="var(--bg)" /><circle cx="8" cy="17" r="2.3" fill="var(--bg)" />
@@ -389,19 +391,19 @@ export default function App() {
               <div className="map-legend">
                 <div className="legend-item">
                   <div className="legend-dot" style={{ background: '#FA3C3C' }} />
-                  <span>Достопримечательности</span>
+                  <span>{t('legend.landmark')}</span>
                 </div>
                 <div className="legend-item">
                   <div className="legend-dot" style={{ background: '#378ADD' }} />
-                  <span>Парки</span>
+                  <span>{t('legend.park')}</span>
                 </div>
                 <div className="legend-item">
                   <div className="legend-dot" style={{ background: '#D4537E' }} />
-                  <span>Музеи</span>
+                  <span>{t('legend.museum')}</span>
                 </div>
                 <div className="legend-item">
                   <div className="legend-dot" style={{ background: '#BA7517' }} />
-                  <span>Рестораны</span>
+                  <span>{t('legend.restaurant')}</span>
                 </div>
               </div>
             </main>
@@ -429,7 +431,7 @@ export default function App() {
         />
       )}
 
-      {newBadge && <div className="badge-toast">🏅 Новый бейдж разблокирован!</div>}
+      {newBadge && <div className="badge-toast">{t('toast.newBadge')}</div>}
 
       {toast && (
         <button
@@ -482,7 +484,7 @@ export default function App() {
                       <span className="nav-badge">{totalUnread > 99 ? '99+' : totalUnread}</span>
                     )}
                   </span>
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 </button>
               ),
             )}

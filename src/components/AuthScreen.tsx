@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { api, type ApiUser } from '../utils/api';
 import { useTheme } from '../hooks/useTheme';
+import { useI18n } from '../i18n';
+import OnboardingProfile from './OnboardingProfile';
 
 // Экран входа/регистрации. После успеха отдаёт пользователя наверх через onAuthed.
-// onBack (если передан) показывает ссылку «← На главную» (назад на лендинг).
+// После регистрации сначала показываем онбординг (заполнение профиля), и только
+// потом пускаем в приложение. onBack (если передан) показывает «← На главную».
 export default function AuthScreen({
   onAuthed,
   initialTab = 'register',
@@ -14,6 +17,7 @@ export default function AuthScreen({
   onBack?: () => void;
 }) {
   const { effective } = useTheme();
+  const { t } = useI18n();
   const [tab, setTab] = useState<'login' | 'register'>(initialTab);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,28 +25,35 @@ export default function AuthScreen({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Новый пользователь, которого нужно провести через онбординг профиля.
+  const [onboarding, setOnboarding] = useState<ApiUser | null>(null);
 
   async function submit() {
     setBusy(true);
     setError('');
     try {
-      const u =
-        tab === 'register'
-          ? await api.register({ name, email, handle, password })
-          : await api.login({ email, password });
-      onAuthed(u);
+      if (tab === 'register') {
+        const u = await api.register({ name, email, handle, password });
+        setOnboarding(u); // показываем шаг «Расскажите о себе»
+      } else {
+        onAuthed(await api.login({ email, password }));
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : t('auth.error'));
     } finally {
       setBusy(false);
     }
+  }
+
+  if (onboarding) {
+    return <OnboardingProfile user={onboarding} onDone={onAuthed} />;
   }
 
   return (
     <div className="auth-screen">
       {onBack && (
         <button type="button" className="auth-back" onClick={onBack}>
-          ← На главную
+          {t('auth.toHome')}
         </button>
       )}
       <img
@@ -50,7 +61,7 @@ export default function AuthScreen({
         src={effective === 'dark' ? '/localee-dark.png' : '/localee-light.png'}
         alt="Localee"
       />
-      <div className="auth-tagline">исследуй город умно</div>
+      <div className="auth-tagline">{t('auth.tagline')}</div>
 
       <div className="auth-card">
         <div className="auth-tabs">
@@ -59,14 +70,14 @@ export default function AuthScreen({
             className={`auth-tab ${tab === 'register' ? 'auth-tab--active' : ''}`}
             onClick={() => setTab('register')}
           >
-            Регистрация
+            {t('auth.register')}
           </button>
           <button
             type="button"
             className={`auth-tab ${tab === 'login' ? 'auth-tab--active' : ''}`}
             onClick={() => setTab('login')}
           >
-            Вход
+            {t('auth.login')}
           </button>
         </div>
 
@@ -79,28 +90,28 @@ export default function AuthScreen({
           {tab === 'register' && (
             <>
               <div className="auth-field">
-                <label className="auth-label">Имя</label>
+                <label className="auth-label">{t('auth.name')}</label>
                 <input
                   className="auth-input"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Как тебя зовут"
+                  placeholder={t('auth.namePh')}
                 />
               </div>
               <div className="auth-field">
-                <label className="auth-label">Ник (латиница)</label>
+                <label className="auth-label">{t('auth.handle')}</label>
                 <input
                   className="auth-input"
                   value={handle}
                   onChange={(e) => setHandle(e.target.value)}
-                  placeholder="например, term1x"
+                  placeholder={t('auth.handlePh')}
                 />
               </div>
             </>
           )}
 
           <div className="auth-field">
-            <label className="auth-label">Email</label>
+            <label className="auth-label">{t('auth.email')}</label>
             <input
               className="auth-input"
               type="email"
@@ -111,18 +122,18 @@ export default function AuthScreen({
           </div>
 
           <div className="auth-field">
-            <label className="auth-label">Пароль</label>
+            <label className="auth-label">{t('auth.password')}</label>
             <input
               className="auth-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="минимум 6 символов"
+              placeholder={t('auth.passwordPh')}
             />
           </div>
 
           <button className="auth-btn" type="submit" disabled={busy}>
-            {busy ? '…' : tab === 'register' ? 'Создать аккаунт' : 'Войти'}
+            {busy ? t('common.savingShort') : tab === 'register' ? t('auth.createAccount') : t('auth.signIn')}
           </button>
         </form>
 

@@ -7,7 +7,13 @@ export const config = {
   port: Number(process.env.PORT) || 4000,
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-me',
   dbPath: process.env.DB_PATH || './data/localee.db',
-  corsOrigin: process.env.CORS_ORIGIN || '*',
+  // Каким сайтам разрешено обращаться к API. Можно указать несколько адресов
+  // через запятую (например, с www и без). '*' — разрешить всем (для локалки).
+  corsOrigin: (() => {
+    const raw = (process.env.CORS_ORIGIN || '*').trim();
+    if (raw === '*') return '*';
+    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  })(),
   // Email-адреса администраторов (через запятую). Эти пользователи автоматически
   // получают роль admin при старте сервера и при входе. Например:
   //   ADMIN_EMAILS=me@example.com, boss@example.com
