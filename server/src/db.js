@@ -96,5 +96,44 @@ db.exec(`
   );
 `);
 
+// --- Группы (чаты на несколько человек) ---
+// Сама группа: название, цвет/буква для аватара, кто создал (owner) и токен для
+// пригласительной ссылки.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS groups (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    name         TEXT    NOT NULL,
+    color        TEXT    NOT NULL DEFAULT '#9B7FE6',
+    letter       TEXT    NOT NULL DEFAULT 'G',
+    owner_id     INTEGER NOT NULL,
+    invite_token TEXT    NOT NULL,
+    created_at   TEXT    NOT NULL
+  );
+`);
+// Участники группы. last_read — id последнего прочитанного сообщения (для непрочитанных).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS group_members (
+    group_id   INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    last_read  INTEGER NOT NULL DEFAULT 0,
+    joined_at  TEXT    NOT NULL,
+    PRIMARY KEY (group_id, user_id)
+  );
+`);
+// Сообщения группы (с поддержкой «изменено» и ответов, как в личных чатах).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS group_messages (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id   INTEGER NOT NULL,
+    sender_id  INTEGER NOT NULL,
+    text       TEXT    NOT NULL,
+    edited     INTEGER NOT NULL DEFAULT 0,
+    reply_to   INTEGER,
+    created_at TEXT    NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_gmsg_group ON group_messages(group_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_gmembers_user ON group_members(user_id)');
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.
