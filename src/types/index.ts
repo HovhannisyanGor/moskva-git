@@ -75,4 +75,5 @@ export type View =
   | 'favorites'
   | 'user'
   | 'settings'
+  | 'support'
   | 'admin';

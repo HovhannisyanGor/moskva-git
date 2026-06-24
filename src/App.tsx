@@ -14,6 +14,7 @@ import FriendsPage from './components/FriendsPage';
 import FavoritesPage from './components/FavoritesPage';
 import UserProfilePage from './components/UserProfilePage';
 import SettingsPage from './components/SettingsPage';
+import SupportPage from './components/SupportPage';
 import AdminPage from './components/AdminPage';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
@@ -345,6 +346,8 @@ export default function App() {
             onThemeChange={theme.setMode}
           />
         ) : null;
+      case 'support':
+        return <SupportPage onBack={() => navigate('profile')} />;
       case 'admin':
         // Вход в админку показан только админам, и сервер всё равно проверяет роль.
         // Если сюда как-то попал не-админ — просто ничего не рендерим.

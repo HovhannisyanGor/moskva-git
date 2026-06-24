@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type AdminUser, type AdminStats } from '../utils/api';
+import { api, type AdminUser, type AdminStats, type SupportMessage } from '../utils/api';
 
 interface AdminPageProps {
   meId: number; // id текущего администратора — чтобы не дать удалить/разжаловать самого себя
@@ -30,6 +30,21 @@ export default function AdminPage({ meId }: AdminPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [support, setSupport] = useState<SupportMessage[]>([]);
+  const [showSupport, setShowSupport] = useState(false);
+
+  useEffect(() => {
+    api.adminSupportList().then(setSupport).catch(() => {});
+  }, []);
+
+  async function resolveSupport(id: number) {
+    try {
+      await api.adminResolveSupport(id);
+      setSupport((prev) => prev.map((m) => (m.id === id ? { ...m, resolved: true } : m)));
+    } catch {
+      /* ignore */
+    }
+  }
 
   const load = useCallback(async (query: string) => {
     setLoading(true);
@@ -112,6 +127,41 @@ export default function AdminPage({ meId }: AdminPageProps) {
             <span>Сообщений</span>
           </div>
         </div>
+
+        {/* Обращения в поддержку */}
+        <button type="button" className="adm-support-toggle" onClick={() => setShowSupport((v) => !v)}>
+          <span>🛟 Обращения в поддержку</span>
+          <span className="adm-support-count">
+            {support.filter((m) => !m.resolved).length} новых · {support.length} всего
+          </span>
+          <span className="adm-support-arrow">{showSupport ? '▴' : '▾'}</span>
+        </button>
+        {showSupport && (
+          <div className="adm-support-list">
+            {support.length === 0 && <div className="adm-empty">Обращений пока нет</div>}
+            {support.map((m) => (
+              <div key={m.id} className={`adm-support-item${m.resolved ? ' adm-support-item--done' : ''}`}>
+                <div className="adm-support-top">
+                  <span className="adm-support-user">
+                    {m.user.name} · @{m.user.handle}
+                  </span>
+                  <span className="adm-support-date">{formatDate(m.createdAt)}</span>
+                </div>
+                <div className="adm-support-text">{m.text}</div>
+                <div className="adm-support-foot">
+                  <a className="adm-support-mail" href={`mailto:${m.user.email}`}>{m.user.email}</a>
+                  {m.resolved ? (
+                    <span className="adm-support-done-badge">обработано</span>
+                  ) : (
+                    <button type="button" className="adm-support-resolve" onClick={() => resolveSupport(m.id)}>
+                      Пометить обработанным
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="adm-search">
           <input

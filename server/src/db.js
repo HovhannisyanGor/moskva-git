@@ -153,5 +153,16 @@ db.exec(`
 db.exec('CREATE INDEX IF NOT EXISTS idx_gmsg_group ON group_messages(group_id)');
 db.exec('CREATE INDEX IF NOT EXISTS idx_gmembers_user ON group_members(user_id)');
 
+// Обращения в поддержку (форма «Написать в поддержку»). Видны админам в админке.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS support_messages (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    text       TEXT    NOT NULL,
+    resolved   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT    NOT NULL
+  );
+`);
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

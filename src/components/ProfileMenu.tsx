@@ -141,7 +141,17 @@ export default function ProfileMenu({
       {open && <div className="profile-backdrop" onClick={() => setOpen(false)} />}
 
       {open && (
-        <div className="profile-dropdown">
+        <div className={`profile-dropdown${navMode ? ' profile-dropdown--full' : ''}`}>
+          {navMode && (
+            <button
+              className="profile-full-close"
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Закрыть"
+            >
+              ×
+            </button>
+          )}
           {view === 'menu' ? (
             <>
               <button className="profile-header profile-header--btn" onClick={() => go('profile')}>
@@ -235,6 +245,14 @@ export default function ProfileMenu({
                   <span className="profile-menu-text">
                     <span className="profile-menu-title">{t('menu.settings')}</span>
                     <span className="profile-menu-sub">{t('menu.settingsSub')}</span>
+                  </span>
+                  <span className="profile-menu-arrow">›</span>
+                </button>
+                <button className="profile-menu-item" type="button" onClick={() => go('support')}>
+                  <span className="profile-menu-icon">🛟</span>
+                  <span className="profile-menu-text">
+                    <span className="profile-menu-title">Поддержка и контакты</span>
+                    <span className="profile-menu-sub">Помощь и связь с нами</span>
                   </span>
                   <span className="profile-menu-arrow">›</span>
                 </button>

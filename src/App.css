@@ -1670,6 +1670,63 @@ html, body { background: var(--bg); }
   padding-bottom: env(safe-area-inset-bottom); animation: sheetUp 0.22s ease;
 }
 
+/* ===== ПРОФИЛЬ НА ВЕСЬ ЭКРАН (мобайл) ===== */
+.app--mobile .topbar-profile--nav .profile-dropdown.profile-dropdown--full {
+  position: fixed; inset: 0; bottom: 0; top: 0; left: 0; right: 0;
+  width: 100%; max-width: none; max-height: none; height: 100dvh;
+  margin: 0; border: none; border-radius: 0; transform: none;
+  overflow-y: auto; z-index: 1500;
+  padding: calc(48px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  animation: fadeIn 0.18s ease;
+}
+.profile-full-close {
+  position: fixed; top: calc(10px + env(safe-area-inset-top)); right: 14px;
+  width: 36px; height: 36px; border: none; border-radius: 50%;
+  background: var(--bg-2); color: var(--text); font-size: 24px; line-height: 1; cursor: pointer; z-index: 2;
+}
+
+/* ===== ПОДДЕРЖКА И КОНТАКТЫ ===== */
+.support-page { max-width: 520px; margin: 0 auto; padding: 28px 20px 60px; }
+.sup-head { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+.sup-back { border: none; background: transparent; color: var(--text); font-size: 28px; line-height: 1; cursor: pointer; margin-left: -8px; }
+.sup-title { font-size: 20px; font-weight: 600; color: var(--text); }
+.sup-section { margin-bottom: 22px; }
+.sup-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 8px; }
+.sup-section-sub { font-size: 13px; color: var(--text-3); margin-bottom: 12px; }
+.sup-contact { display: flex; align-items: center; gap: 13px; padding: 13px 14px; border-radius: var(--radius); background: var(--bg-2); border: 0.5px solid var(--border); text-decoration: none; margin-bottom: 8px; }
+.sup-contact:hover { border-color: var(--accent); }
+.sup-contact-ic { font-size: 20px; }
+.sup-contact-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sup-contact-label { font-size: 12px; color: var(--text-3); }
+.sup-contact-val { font-size: 14px; color: var(--text); word-break: break-all; }
+.sup-contact-arrow { color: var(--text-3); font-size: 18px; }
+.sup-textarea { width: 100%; box-sizing: border-box; font-size: 14px; padding: 12px 14px; border-radius: var(--radius); border: 0.5px solid var(--border-2); background: var(--bg-2); color: var(--text); resize: vertical; min-height: 110px; font-family: inherit; }
+.sup-error { font-size: 13px; color: var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 9px 12px; margin-top: 10px; }
+.sup-submit { margin-top: 12px; width: 100%; padding: 13px; border: none; border-radius: var(--radius); background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+.sup-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.sup-sent { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--bg-2); border: 0.5px solid var(--border); }
+.sup-sent-ic { font-size: 22px; }
+.sup-sent-body { flex: 1; }
+.sup-sent-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.sup-sent-sub { font-size: 13px; color: var(--text-3); margin-top: 3px; }
+.sup-sent-again { border: 0.5px solid var(--border-2); background: transparent; color: var(--accent); font-size: 13px; padding: 7px 11px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+
+/* ===== ОБРАЩЕНИЯ В АДМИНКЕ ===== */
+.adm-support-toggle { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 12px; border: 0.5px solid var(--border-2); border-radius: var(--radius); background: var(--bg-2); color: var(--text); font-size: 14px; cursor: pointer; }
+.adm-support-count { margin-left: auto; font-size: 12px; color: var(--text-3); }
+.adm-support-arrow { color: var(--text-3); }
+.adm-support-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.adm-support-item { padding: 12px 14px; border-radius: var(--radius); background: var(--bg-2); border: 0.5px solid var(--border); }
+.adm-support-item--done { opacity: 0.55; }
+.adm-support-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.adm-support-user { font-size: 13px; font-weight: 600; color: var(--text); }
+.adm-support-date { font-size: 12px; color: var(--text-3); }
+.adm-support-text { font-size: 14px; color: var(--text); white-space: pre-wrap; word-break: break-word; margin-bottom: 10px; }
+.adm-support-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.adm-support-mail { font-size: 12.5px; color: #3FAE6E; text-decoration: none; }
+.adm-support-resolve { border: 0.5px solid var(--accent); background: transparent; color: var(--accent); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.adm-support-done-badge { font-size: 11px; color: var(--text-3); background: var(--border); padding: 3px 9px; border-radius: 12px; }
+
 /* ===== FRIENDS ===== */
 .friends-page { max-width: 440px; margin: 0 auto; padding: 28px 20px 60px; }
 .fr-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }

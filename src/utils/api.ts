@@ -77,6 +77,15 @@ export interface AdminStats {
   messages: number;
 }
 
+// --- Поддержка ---
+export interface SupportMessage {
+  id: number;
+  text: string;
+  resolved: boolean;
+  createdAt: string;
+  user: { id: number; name: string; handle: string; email: string };
+}
+
 // Типы для чатов
 export interface ChatUser {
   id: number;
@@ -378,6 +387,18 @@ export const api = {
       method: 'DELETE',
       auth: true,
     });
+  },
+
+  // --- Поддержка ---
+  async sendSupport(text: string) {
+    return request<{ ok: boolean }>('/api/support', { method: 'POST', body: { text }, auth: true });
+  },
+  async adminSupportList() {
+    const data = await request<{ messages: SupportMessage[] }>('/api/support', { auth: true });
+    return data.messages;
+  },
+  async adminResolveSupport(id: number) {
+    return request<{ ok: boolean }>(`/api/support/${id}/resolve`, { method: 'PATCH', auth: true });
   },
 
   logout() {
