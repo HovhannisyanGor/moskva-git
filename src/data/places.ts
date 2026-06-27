@@ -242,6 +242,68 @@ export const PLACES: Place[] = [
     ticketUrl: 'https://shm.ru/museum/hvb/',
     imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Храм_Василия_Блаженного.jpg/800px-Храм_Василия_Блаженного.jpg',
   },
+
+  // --- Места 18+ (ночная жизнь): показываются только после подтверждения возраста ---
+  {
+    id: 19,
+    name: 'Мята Lounge',
+    category: 'nightlife',
+    description: 'Сеть кальянных лаунж-баров: уютная атмосфера, большой выбор кальянов и коктейлей. Вход с 18 лет.',
+    address: 'ул. Тверская, 18, Москва',
+    coords: [55.7637, 37.6063],
+    price: 1500,
+    duration: 120,
+    rating: 4.5,
+    tags: ['18+', 'кальян', 'лаунж', 'бар'],
+  },
+  {
+    id: 20,
+    name: 'Ночной клуб Pravda',
+    category: 'nightlife',
+    description: 'Танцевальный клуб с электронной музыкой и выступлениями диджеев. Открыт до утра. Строго 18+, фейсконтроль.',
+    address: 'Большой Путинковский пер., 5, Москва',
+    coords: [55.7672, 37.6118],
+    price: 1000,
+    duration: 180,
+    rating: 4.3,
+    tags: ['18+', 'клуб', 'танцы', 'ночь'],
+  },
+  {
+    id: 21,
+    name: 'Бар «Полночь»',
+    category: 'nightlife',
+    description: 'Коктейльный бар с авторскими напитками и живой музыкой по выходным. Работает до 4 утра. Вход 18+.',
+    address: 'ул. Никольская, 10, Москва',
+    coords: [55.7574, 37.6242],
+    price: 1200,
+    duration: 120,
+    rating: 4.6,
+    tags: ['18+', 'бар', 'коктейли', 'музыка'],
+  },
+  {
+    id: 22,
+    name: 'Ночной ресторан «Луна»',
+    category: 'nightlife',
+    description: 'Ресторан с поздней кухней и панорамной террасой. Кухня и бар работают до утра. Подходит для компаний 18+.',
+    address: 'Кутузовский просп., 2/1, Москва',
+    coords: [55.7475, 37.5669],
+    price: 2500,
+    duration: 150,
+    rating: 4.7,
+    tags: ['18+', 'ресторан', 'ночь', 'терраса'],
+  },
+  {
+    id: 23,
+    name: 'Кальянная Hookah Place',
+    category: 'nightlife',
+    description: 'Современная кальянная с большим меню табаков и закусок. Тихая музыка, приставки, настольные игры. 18+.',
+    address: 'Цветной бул., 11, Москва',
+    coords: [55.7708, 37.6201],
+    price: 1300,
+    duration: 120,
+    rating: 4.4,
+    tags: ['18+', 'кальян', 'отдых'],
+  },
 ];
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -250,6 +312,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   museum: 'Музей',
   restaurant: 'Ресторан',
   entertainment: 'Развлечения',
+  nightlife: '18+ · Ночная жизнь',
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
@@ -258,4 +321,5 @@ export const CATEGORY_COLORS: Record<string, string> = {
   museum: '#D4537E',
   restaurant: '#BA7517',
   entertainment: '#7F77DD',
+  nightlife: '#C04CFF',
 };

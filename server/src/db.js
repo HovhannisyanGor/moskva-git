@@ -164,5 +164,20 @@ db.exec(`
   );
 `);
 
+// Пользовательские метки на карте: скопления людей, сходки, дрифт-гонки.
+// Эфемерные — на фронте показываем только свежие (за последние сутки).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS map_pins (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    kind       TEXT    NOT NULL,
+    note       TEXT    NOT NULL DEFAULT '',
+    lat        REAL    NOT NULL,
+    lng        REAL    NOT NULL,
+    created_at TEXT    NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_pins_created ON map_pins(created_at)');
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

@@ -64,6 +64,7 @@ const CATEGORY_COLOR: Record<PlaceCategory, string> = {
   museum: '#D4537E',
   restaurant: '#BA7517',
   entertainment: '#9B7FE6',
+  nightlife: '#C04CFF',
 };
 
 function relativeWhen(iso: string, lang: Lang): string {

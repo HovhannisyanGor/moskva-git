@@ -77,6 +77,19 @@ export interface AdminStats {
   messages: number;
 }
 
+// --- Метки на карте ---
+export type PinKind = 'crowd' | 'meetup' | 'drift';
+export interface MapPin {
+  id: number;
+  kind: PinKind;
+  note: string;
+  lat: number;
+  lng: number;
+  createdAt: string;
+  mine: boolean;
+  author: { name: string; handle: string } | null;
+}
+
 // --- Поддержка ---
 export interface SupportMessage {
   id: number;
@@ -399,6 +412,19 @@ export const api = {
   },
   async adminResolveSupport(id: number) {
     return request<{ ok: boolean }>(`/api/support/${id}/resolve`, { method: 'PATCH', auth: true });
+  },
+
+  // --- Метки на карте ---
+  async pinList() {
+    const data = await request<{ pins: MapPin[] }>('/api/pins', { auth: true });
+    return data.pins;
+  },
+  async createPin(input: { kind: PinKind; lat: number; lng: number; note?: string }) {
+    const data = await request<{ pin: MapPin }>('/api/pins', { method: 'POST', body: input, auth: true });
+    return data.pin;
+  },
+  async deletePin(id: number) {
+    return request<{ ok: boolean }>(`/api/pins/${id}`, { method: 'DELETE', auth: true });
   },
 
   logout() {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import Map from './components/Map';
 import AIChat from './components/AIChat';
@@ -26,7 +26,7 @@ import { useChatNotifications } from './hooks/useChatNotifications';
 import { useI18n } from './i18n';
 import type { Place, Route, View } from './types';
 import { PLACES } from './data/places';
-import { api, getToken, clearToken, type ApiUser, type ChatUser } from './utils/api';
+import { api, getToken, clearToken, type ApiUser, type ChatUser, type MapPin, type PinKind } from './utils/api';
 import { buildDisplayUser, displayBadges, recentPlaces } from './utils/profile';
 import './App.css';
 
@@ -66,10 +66,114 @@ const MOBILE_NAV: { view: View; labelKey: string; icon: ReactNode }[] = [
   { view: 'profile', labelKey: 'nav.profile', icon: ICON.user },
 ];
 
+// Типы пользовательских меток на карте.
+const PIN_KINDS: { kind: PinKind; emoji: string; label: string }[] = [
+  { kind: 'crowd', emoji: '👥', label: 'Скопление людей' },
+  { kind: 'meetup', emoji: '📣', label: 'Сходка' },
+  { kind: 'drift', emoji: '🏎️', label: 'Дрифт-гонки' },
+];
+const pinMeta = (k: PinKind) => PIN_KINDS.find((x) => x.kind === k);
+
+function pinWhen(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return '';
+  const min = Math.round((Date.now() - then) / 60000);
+  if (min < 1) return 'только что';
+  if (min < 60) return `${min} мин назад`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} ч назад`;
+  return new Date(iso).toLocaleDateString('ru-RU');
+}
+
 export default function App() {
   const [activeRoute, setActiveRoute] = useState<Route | null>(null);
   const [activeView, setActiveView] = useState<View>('map');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  // Места 18+ (ночная жизнь): по умолчанию скрыты, показываем после подтверждения возраста.
+  const [show18, setShow18] = useState(() => {
+    try {
+      return localStorage.getItem('localee_age18') === '1' && localStorage.getItem('localee_show18') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [ageAsk, setAgeAsk] = useState(false);
+
+  // Пользовательские метки на карте
+  const [pins, setPins] = useState<MapPin[]>([]);
+  const [placingKind, setPlacingKind] = useState<PinKind | null>(null);
+  const [pinKindMenu, setPinKindMenu] = useState(false);
+  const [pinDraft, setPinDraft] = useState<{ kind: PinKind; lat: number; lng: number } | null>(null);
+  const [pinNote, setPinNote] = useState('');
+  const [pinView, setPinView] = useState<MapPin | null>(null);
+
+  // Клик по карте в режиме постановки — фиксируем точку, выходим из режима.
+  const onMapClickForPin = useCallback((lat: number, lng: number) => {
+    setPlacingKind((kind) => {
+      if (kind) setPinDraft({ kind, lat, lng });
+      return null;
+    });
+  }, []);
+
+  const visiblePlaces = useMemo(
+    () => (show18 ? PLACES : PLACES.filter((p) => p.category !== 'nightlife')),
+    [show18],
+  );
+
+  const toggle18 = useCallback(() => {
+    setShow18((on) => {
+      if (on) {
+        try { localStorage.setItem('localee_show18', '0'); } catch { /* ignore */ }
+        return false;
+      }
+      const confirmed = (() => {
+        try { return localStorage.getItem('localee_age18') === '1'; } catch { return false; }
+      })();
+      if (!confirmed) {
+        setAgeAsk(true);
+        return false;
+      }
+      try { localStorage.setItem('localee_show18', '1'); } catch { /* ignore */ }
+      return true;
+    });
+  }, []);
+
+  const confirmAge = useCallback((yes: boolean) => {
+    setAgeAsk(false);
+    if (!yes) return;
+    try {
+      localStorage.setItem('localee_age18', '1');
+      localStorage.setItem('localee_show18', '1');
+    } catch { /* ignore */ }
+    setShow18(true);
+  }, []);
+
+  async function submitPin() {
+    if (!pinDraft) return;
+    try {
+      const pin = await api.createPin({
+        kind: pinDraft.kind,
+        lat: pinDraft.lat,
+        lng: pinDraft.lng,
+        note: pinNote.trim(),
+      });
+      setPins((prev) => [pin, ...prev]);
+      setPinDraft(null);
+      setPinNote('');
+    } catch {
+      /* ignore */
+    }
+  }
+  async function deletePinNow(p: MapPin) {
+    if (!window.confirm('Удалить метку?')) return;
+    try {
+      await api.deletePin(p.id);
+      setPins((prev) => prev.filter((x) => x.id !== p.id));
+      setPinView(null);
+    } catch {
+      /* ignore */
+    }
+  }
   const { visits, unlockedBadges, isVisited, toggleVisit, newBadge, resetAchievements } = useAchievements();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
@@ -106,6 +210,21 @@ export default function App() {
       alive = false;
     };
   }, []);
+
+  // Метки на карте: загрузка + опрос раз в 15 сек (показываем свежие, за сутки).
+  useEffect(() => {
+    if (!currentUser) return;
+    let alive = true;
+    const tick = () => {
+      api.pinList().then((p) => alive && setPins(p)).catch(() => {});
+    };
+    tick();
+    const t = setInterval(tick, 15000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [currentUser]);
 
   // Пригласительная ссылка в группу: ?join=TOKEN — вступаем и открываем «Чаты».
   useEffect(() => {
@@ -389,11 +508,151 @@ export default function App() {
 
             <main className="map-container">
               <Map
-                places={PLACES}
+                places={visiblePlaces}
                 activeRoute={activeRoute}
                 onPlaceClick={handlePlaceClick}
                 visitedIds={visits.map((v) => v.placeId)}
+                pins={pins}
+                onPinClick={setPinView}
+                placing={placingKind != null}
+                onMapClick={onMapClickForPin}
               />
+
+              <button
+                type="button"
+                className={`map-18-btn${show18 ? ' map-18-btn--on' : ''}`}
+                onClick={toggle18}
+                title={show18 ? 'Скрыть места 18+' : 'Показать места 18+'}
+              >
+                <span className="map-18-badge">18+</span>
+                <span className="map-18-label">{show18 ? 'показаны' : 'места'}</span>
+              </button>
+
+              {ageAsk && (
+                <div className="age-modal-backdrop" onClick={() => confirmAge(false)}>
+                  <div className="age-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="age-modal-ic">🔞</div>
+                    <div className="age-modal-title">Контент 18+</div>
+                    <div className="age-modal-text">
+                      Кальянные, клубы и ночные заведения. Подтвердите, что вам есть 18 лет.
+                    </div>
+                    <div className="age-modal-actions">
+                      <button className="age-modal-no" type="button" onClick={() => confirmAge(false)}>
+                        Мне нет 18
+                      </button>
+                      <button className="age-modal-yes" type="button" onClick={() => confirmAge(true)}>
+                        Мне есть 18
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Кнопка «отметить место» + выбор типа */}
+              <div className="map-pin-tool">
+                <button
+                  type="button"
+                  className={`map-pin-fab${placingKind ? ' map-pin-fab--active' : ''}`}
+                  onClick={() => setPinKindMenu((v) => !v)}
+                  title="Отметить место на карте"
+                >
+                  📍 <span>Отметить</span>
+                </button>
+                {pinKindMenu && (
+                  <div className="pin-kind-menu">
+                    <div className="pin-kind-title">Что отметить?</div>
+                    {PIN_KINDS.map((k) => (
+                      <button
+                        key={k.kind}
+                        type="button"
+                        className="pin-kind-item"
+                        onClick={() => {
+                          setPlacingKind(k.kind);
+                          setPinKindMenu(false);
+                        }}
+                      >
+                        <span className="pin-kind-emoji">{k.emoji}</span> {k.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {placingKind && (
+                <div className="pin-place-banner">
+                  <span>{pinMeta(placingKind)?.emoji} Нажмите на карте, где это происходит</span>
+                  <button type="button" onClick={() => setPlacingKind(null)}>
+                    Отмена
+                  </button>
+                </div>
+              )}
+
+              {pinDraft && (
+                <div
+                  className="age-modal-backdrop"
+                  onClick={() => {
+                    setPinDraft(null);
+                    setPinNote('');
+                  }}
+                >
+                  <div className="age-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="age-modal-ic">{pinMeta(pinDraft.kind)?.emoji}</div>
+                    <div className="age-modal-title">{pinMeta(pinDraft.kind)?.label}</div>
+                    <textarea
+                      className="sup-textarea"
+                      style={{ marginTop: 12 }}
+                      placeholder="Описание (необязательно)…"
+                      value={pinNote}
+                      onChange={(e) => setPinNote(e.target.value)}
+                      rows={3}
+                      maxLength={200}
+                    />
+                    <div className="age-modal-actions">
+                      <button
+                        className="age-modal-no"
+                        type="button"
+                        onClick={() => {
+                          setPinDraft(null);
+                          setPinNote('');
+                        }}
+                      >
+                        Отмена
+                      </button>
+                      <button className="age-modal-yes" type="button" onClick={submitPin}>
+                        Поставить метку
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pinView && (
+                <div className="age-modal-backdrop" onClick={() => setPinView(null)}>
+                  <div className="age-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="age-modal-ic">{pinMeta(pinView.kind)?.emoji}</div>
+                    <div className="age-modal-title">{pinMeta(pinView.kind)?.label}</div>
+                    {pinView.note && <div className="age-modal-text">{pinView.note}</div>}
+                    <div className="pin-view-meta">
+                      {pinView.author?.name || 'Аноним'} · {pinWhen(pinView.createdAt)}
+                    </div>
+                    <div className="age-modal-actions">
+                      <button className="age-modal-no" type="button" onClick={() => setPinView(null)}>
+                        Закрыть
+                      </button>
+                      {pinView.mine && (
+                        <button
+                          className="age-modal-yes"
+                          type="button"
+                          style={{ background: 'var(--accent)' }}
+                          onClick={() => deletePinNow(pinView)}
+                        >
+                          Удалить
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {activeRoute && (
                 <div className="route-overlay">
@@ -429,6 +688,12 @@ export default function App() {
                   <div className="legend-dot" style={{ background: '#BA7517' }} />
                   <span>{t('legend.restaurant')}</span>
                 </div>
+                {show18 && (
+                  <div className="legend-item">
+                    <div className="legend-dot" style={{ background: '#C04CFF' }} />
+                    <span>18+ · ночная жизнь</span>
+                  </div>
+                )}
               </div>
             </main>
           </div>

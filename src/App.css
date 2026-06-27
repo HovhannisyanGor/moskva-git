@@ -549,6 +549,84 @@ html, body { background: var(--bg); }
   overflow: hidden;
 }
 
+/* Кнопка «18+ места» на карте */
+.map-18-btn {
+  position: absolute; top: 16px; left: 16px; z-index: 5;
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 13px 6px 7px; border-radius: 22px; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--border-2); color: var(--text-2);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.14); font-size: 13px;
+}
+.map-18-btn:hover { border-color: #C04CFF; }
+.map-18-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 24px; padding: 0 6px; border-radius: 16px;
+  background: var(--bg-3); color: var(--text-3); font-size: 12px; font-weight: 800; letter-spacing: 0.02em;
+}
+.map-18-label { font-weight: 500; }
+.map-18-btn--on { background: #C04CFF; border-color: #C04CFF; color: #fff; box-shadow: 0 4px 16px rgba(192,76,255,0.45); }
+.map-18-btn--on .map-18-badge { background: rgba(255,255,255,0.22); color: #fff; }
+
+/* Модалка подтверждения возраста */
+.age-modal-backdrop {
+  position: fixed; inset: 0; z-index: 1600; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.age-modal {
+  width: 340px; max-width: 100%; background: var(--bg-2); border: 0.5px solid var(--border);
+  border-radius: 20px; padding: 24px 22px; text-align: center;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.5); animation: fadeIn 0.2s ease;
+}
+.age-modal-ic { font-size: 40px; }
+.age-modal-title { font-size: 19px; font-weight: 700; color: var(--text); margin-top: 8px; }
+.age-modal-text { font-size: 14px; color: var(--text-3); margin-top: 8px; line-height: 1.5; }
+.age-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.age-modal-no, .age-modal-yes { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+.age-modal-no { background: var(--bg-3); color: var(--text-2); }
+.age-modal-yes { background: #C04CFF; color: #fff; }
+
+/* На мобилке — под безопасную зону сверху */
+.app--mobile .map-18-btn { top: calc(14px + env(safe-area-inset-top)); left: 14px; }
+
+/* ===== ПОЛЬЗОВАТЕЛЬСКИЕ МЕТКИ НА КАРТЕ ===== */
+.map-pin-tool { position: absolute; top: 60px; left: 16px; z-index: 5; }
+.app--mobile .map-pin-tool { top: calc(58px + env(safe-area-inset-top)); left: 14px; }
+.map-pin-fab {
+  display: flex; align-items: center; gap: 6px; padding: 7px 14px 7px 11px; border-radius: 22px;
+  border: 1px solid var(--border-2); background: var(--bg); color: var(--text);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.14); font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.map-pin-fab:hover { border-color: var(--accent); }
+.map-pin-fab--active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pin-kind-menu {
+  margin-top: 8px; width: 230px; background: var(--bg-2); border: 0.5px solid var(--border);
+  border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); padding: 6px;
+}
+.pin-kind-title { font-size: 12px; color: var(--text-3); padding: 6px 8px; }
+.pin-kind-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 8px; border: none; background: transparent; color: var(--text); font-size: 14px; cursor: pointer; border-radius: 8px; text-align: left; }
+.pin-kind-item:hover { background: var(--bg-3); }
+.pin-kind-emoji { font-size: 18px; }
+.pin-place-banner {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 6;
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 28px);
+  padding: 9px 11px 9px 16px; border-radius: 22px; background: var(--text); color: var(--bg);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3); font-size: 13px; white-space: nowrap;
+}
+.pin-place-banner button { border: none; background: rgba(128,128,128,0.3); color: inherit; font-size: 12px; padding: 5px 11px; border-radius: 14px; cursor: pointer; }
+.app--mobile .pin-place-banner { top: calc(14px + env(safe-area-inset-top)); }
+.pin-view-meta { font-size: 13px; color: var(--text-3); margin-top: 10px; }
+
+/* Маркер метки на карте (эмодзи в «капле») */
+.map-pin { transform: translate(-50%, -50%); cursor: pointer; }
+.map-pin-badge {
+  width: 36px; height: 36px; border-radius: 50% 50% 50% 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  background: #fff; box-shadow: 0 2px 9px rgba(0,0,0,0.4); border: 2.5px solid var(--accent);
+}
+.map-pin--crowd .map-pin-badge { border-color: #FF8A3C; }
+.map-pin--meetup .map-pin-badge { border-color: #3FAE6E; }
+.map-pin--drift .map-pin-badge { border-color: #378ADD; }
+
 .map-legend {
   position: absolute;
   bottom: 20px;

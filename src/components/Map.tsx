@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { load } from '@2gis/mapgl';
 import type { Place, Route } from '../types';
+import type { MapPin } from '../utils/api';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '../data/places';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -13,6 +14,20 @@ interface MapProps {
   activeRoute: Route | null;
   onPlaceClick: (place: Place) => void;
   visitedIds?: number[];
+  pins?: MapPin[];
+  onPinClick?: (pin: MapPin) => void;
+  placing?: boolean; // режим постановки метки — следующий клик по карте ставит метку
+  onMapClick?: (lat: number, lng: number) => void;
+}
+
+const PIN_EMOJI: Record<string, string> = { crowd: '👥', meetup: '📣', drift: '🏎️' };
+
+function buildPinMarker(emoji: string, kind: string, onClick: () => void): HTMLElement {
+  const el = document.createElement('div');
+  el.className = `map-pin map-pin--${kind}`;
+  el.innerHTML = `<div class="map-pin-badge">${emoji}</div>`;
+  el.addEventListener('click', onClick);
+  return el;
 }
 
 // Наши координаты хранятся как [lat, lng], 2ГИС хочет [lng, lat].
@@ -40,7 +55,16 @@ const visitedDotHtml = (color: string) =>
 const routeDotHtml = (color: string, order: number) =>
   `<div class="map-dot map-dot--route" style="background:${color}">${order}</div>`;
 
-export default function Map({ places, activeRoute, onPlaceClick, visitedIds = [] }: MapProps) {
+export default function Map({
+  places,
+  activeRoute,
+  onPlaceClick,
+  visitedIds = [],
+  pins = [],
+  onPinClick,
+  placing = false,
+  onMapClick,
+}: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const mapglRef = useRef<any>(null);
@@ -152,7 +176,32 @@ export default function Map({ places, activeRoute, onPlaceClick, visitedIds = []
       });
       objectsRef.current.push(marker);
     });
-  }, [places, activeRoute, onPlaceClick, visitedIds, ready]);
+
+    // Пользовательские метки (скопления людей, сходки, дрифт-гонки)
+    pins.forEach((pin) => {
+      const el = buildPinMarker(PIN_EMOJI[pin.kind] || '📍', pin.kind, () => onPinClick?.(pin));
+      const marker = new mapgl.HtmlMarker(map, {
+        coordinates: [pin.lng, pin.lat],
+        html: el,
+        anchor: [0, 0],
+      });
+      objectsRef.current.push(marker);
+    });
+  }, [places, activeRoute, onPlaceClick, visitedIds, ready, pins, onPinClick]);
+
+  // Режим постановки метки: следующий клик по карте отдаёт координаты наверх.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !placing || !onMapClick) return;
+    const handler = (e: any) => {
+      const c = e?.lngLat || e?.latLng;
+      if (c && c.length === 2) onMapClick(c[1], c[0]); // [lng,lat] -> lat,lng
+    };
+    map.on('click', handler);
+    return () => {
+      try { map.off('click', handler); } catch { /* ignore */ }
+    };
+  }, [ready, placing, onMapClick]);
 
   if (error) {
     return (

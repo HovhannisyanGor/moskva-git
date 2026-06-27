@@ -1,4 +1,10 @@
-export type PlaceCategory = 'landmark' | 'park' | 'museum' | 'restaurant' | 'entertainment';
+export type PlaceCategory =
+  | 'landmark'
+  | 'park'
+  | 'museum'
+  | 'restaurant'
+  | 'entertainment'
+  | 'nightlife'; // 18+: кальянные, клубы, ночные бары/рестораны
 
 export interface Place {
   id: number;
