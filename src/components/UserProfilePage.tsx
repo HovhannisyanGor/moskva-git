@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type ChatUser, type PublicUser, type Relation } from '../utils/api';
+import { api, type ChatUser, type PublicUser, type Relation, type PostItem, type PhotoItem } from '../utils/api';
 import { useI18n } from '../i18n';
 import AvatarLightbox from './AvatarLightbox';
+import PostCard from './PostCard';
 import { localizeCity } from './profileFields';
 
 export default function UserProfilePage({
   userId,
   onBack,
   onMessage,
+  onOpenProfile,
 }: {
   userId: number;
   onBack: () => void;
   onMessage: (u: ChatUser) => void;
+  onOpenProfile?: (id: number) => void;
 }) {
   const { t, lang, formatBirthday, formatAge, formatSince } = useI18n();
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -19,6 +22,9 @@ export default function UserProfilePage({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [zoom, setZoom] = useState(false);
+  const [posts, setPosts] = useState<PostItem[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [photoZoom, setPhotoZoom] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -33,6 +39,15 @@ export default function UserProfilePage({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    let alive = true;
+    api.userPosts(userId).then((p) => alive && setPosts(p)).catch(() => {});
+    api.userPhotos(userId).then((p) => alive && setPhotos(p)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
 
   async function friendAction() {
     if (!user) return;
@@ -61,6 +76,9 @@ export default function UserProfilePage({
   const avatarStyle = user?.avatar
     ? { backgroundImage: `url(${user.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: user?.color };
+  const coverStyle = user?.cover
+    ? { backgroundImage: `url(${user.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: `linear-gradient(135deg, ${user?.color}, ${user?.color}99)` };
 
   // Блок «Информация» — только заполненные строки.
   const infoRows: { icon: string; label: string; value: string }[] = [];
@@ -91,7 +109,7 @@ export default function UserProfilePage({
 
         {user && (
           <>
-            <div className="up-cover" style={{ background: user.color }}>
+            <div className="up-cover pp-cover--lg" style={coverStyle}>
               <span className="pp-cover-tint" />
             </div>
 
@@ -171,6 +189,46 @@ export default function UserProfilePage({
                 </div>
               )}
             </section>
+
+            {photos.length > 0 && (
+              <section className="pp-section">
+                <div className="pp-section-label">
+                  {t('profile.photos')} <span className="pp-section-count">{photos.length}</span>
+                </div>
+                <div className="pp-photos">
+                  {photos.slice(0, 9).map((ph) => (
+                    <button
+                      key={ph.postId}
+                      type="button"
+                      className="pp-photo"
+                      style={{ backgroundImage: `url(${ph.image})` }}
+                      onClick={() => setPhotoZoom(ph.image)}
+                      aria-label="фото"
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="pp-section">
+              <div className="pp-section-label">{t('profile.wall')}</div>
+              {posts.length === 0 ? (
+                <div className="pp-list-item">
+                  <span className="pp-list-name pp-muted">{t('profile.noPostsOther')}</span>
+                </div>
+              ) : (
+                <div className="feed-list">
+                  {posts.map((p) => (
+                    <PostCard
+                      key={p.id}
+                      post={p}
+                      onOpenProfile={onOpenProfile}
+                      onDeleted={(id) => setPosts((prev) => prev.filter((x) => x.id !== id))}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>
@@ -183,6 +241,14 @@ export default function UserProfilePage({
           name={user.name}
           onClose={() => setZoom(false)}
         />
+      )}
+      {photoZoom && (
+        <div className="photo-lightbox" onClick={() => setPhotoZoom('')}>
+          <img src={photoZoom} alt="" />
+          <button type="button" className="photo-lightbox-x" onClick={() => setPhotoZoom('')} aria-label={t('common.close')}>
+            ×
+          </button>
+        </div>
       )}
     </div>
   );

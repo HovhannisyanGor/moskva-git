@@ -1209,7 +1209,7 @@ html, body { background: var(--bg); }
 .profile-header--btn:hover { background: var(--bg-2); }
 
 /* ===== PROFILE PAGE ===== */
-.profile-page { max-width: 560px; margin: 0 auto; padding: 36px 24px 60px; }
+.profile-page { max-width: 920px; margin: 0 auto; padding: 28px 24px 60px; }
 .pp-head { display: flex; align-items: center; gap: 20px; margin-bottom: 22px; }
 .pp-avatar {
   width: 80px; height: 80px; border-radius: 50%;
@@ -2250,3 +2250,236 @@ html, body { background: var(--bg); }
   font-size: 17px; line-height: 1; padding: 0 4px; opacity: 0.7;
 }
 .interest-chip-x:hover { opacity: 1; }
+
+/* ============================================================
+   СОЦИАЛЬНАЯ ЧАСТЬ: лента, посты, фото, обложка, друзья справа
+   ============================================================ */
+
+/* --- Большая обложка профиля + кнопки смены обложки/аватара --- */
+.pp-cover--lg { height: 220px; }
+.pp-cover-edit {
+  position: absolute; right: 12px; bottom: 12px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; cursor: pointer; font-size: 13px; font-weight: 600;
+  padding: 8px 13px; border-radius: 20px;
+  background: rgba(0,0,0,0.5); color: #fff; backdrop-filter: blur(4px);
+}
+.pp-cover-edit:hover { background: rgba(0,0,0,0.65); }
+.pp-cover-edit:disabled { opacity: 0.6; cursor: default; }
+.pp-avatar-wrap { position: relative; flex-shrink: 0; }
+.pp-avatar-edit {
+  position: absolute; right: -2px; bottom: -2px; width: 30px; height: 30px;
+  border-radius: 50%; border: 3px solid var(--bg); cursor: pointer;
+  background: var(--accent); color: #fff; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+.pp-avatar-edit:hover { background: var(--accent-dark); }
+.pp-avatar-edit:disabled { opacity: 0.6; cursor: default; }
+
+/* --- Двухколоночная раскладка: контент + правое меню «Друзья» --- */
+.social-layout { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; }
+.social-main { min-width: 0; }
+.social-aside { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (min-width: 900px) {
+  .social-layout { grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; }
+}
+
+/* --- Поле создания поста --- */
+.composer {
+  background: var(--bg-2); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 18px;
+}
+.composer-top { display: flex; gap: 12px; align-items: flex-start; }
+.composer-av {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 600; font-size: 16px; background-size: cover; background-position: center;
+}
+.composer-input {
+  flex: 1; min-width: 0; resize: none; border: none; background: transparent;
+  color: var(--text); font: inherit; font-size: 15px; line-height: 1.5; padding: 9px 0; outline: none;
+}
+.composer-preview { position: relative; margin-top: 10px; border-radius: var(--radius); overflow: hidden; }
+.composer-preview img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
+.composer-preview-x {
+  position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.composer-error { color: var(--accent); font-size: 13px; margin-top: 8px; }
+.composer-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; gap: 10px; }
+.composer-photo {
+  border: none; background: var(--bg-3); color: var(--text-2); cursor: pointer;
+  font-size: 13.5px; font-weight: 500; padding: 8px 13px; border-radius: 18px;
+}
+.composer-photo:hover { background: var(--border-2); }
+.composer-publish {
+  border: none; background: var(--accent); color: #fff; cursor: pointer;
+  font-size: 14px; font-weight: 600; padding: 9px 20px; border-radius: 20px;
+}
+.composer-publish:disabled { opacity: 0.5; cursor: default; }
+
+/* --- Лента: вкладки и список --- */
+.feed-page { max-width: 600px; }
+.feed-tabs {
+  display: flex; gap: 8px; margin-bottom: 16px;
+  background: var(--bg-2); padding: 5px; border-radius: 26px; width: fit-content;
+}
+.feed-tab {
+  border: none; background: transparent; cursor: pointer; color: var(--text-2);
+  font-size: 14px; font-weight: 600; padding: 8px 20px; border-radius: 22px;
+}
+.feed-tab--active { background: var(--accent); color: #fff; }
+.feed-list { display: flex; flex-direction: column; gap: 14px; }
+.feed-empty { text-align: center; color: var(--text-3); padding: 40px 20px; font-size: 14px; }
+
+/* --- Карточка поста --- */
+.post { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.post-head { display: flex; align-items: center; gap: 11px; }
+.post-av {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; border: none; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 16px;
+  background-size: cover; background-position: center;
+}
+.post-id { flex: 1; min-width: 0; text-align: left; border: none; background: transparent; cursor: pointer; padding: 0; }
+.post-name { display: block; font-size: 14.5px; font-weight: 600; color: var(--text); }
+.post-name:hover { color: var(--accent); }
+.post-when { display: block; font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.post-del {
+  border: none; background: transparent; cursor: pointer; font-size: 15px; opacity: 0.5;
+  padding: 4px 6px; border-radius: 6px; flex-shrink: 0;
+}
+.post-del:hover { opacity: 1; background: var(--bg-3); }
+.post-text { font-size: 15px; line-height: 1.55; color: var(--text); white-space: pre-wrap; word-wrap: break-word; margin-top: 11px; }
+.post-image { margin-top: 11px; border-radius: var(--radius); overflow: hidden; }
+.post-image img { width: 100%; max-height: 520px; object-fit: cover; display: block; }
+.post-actions { display: flex; gap: 8px; margin-top: 12px; }
+.post-action {
+  display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer;
+  background: var(--bg-3); color: var(--text-2); font-size: 13.5px; font-weight: 600;
+  padding: 7px 14px; border-radius: 18px; transition: background 0.15s, color 0.15s;
+}
+.post-action:hover { background: var(--border-2); }
+.post-action--liked { background: var(--accent-soft); color: var(--accent); }
+.post-action--on { color: var(--text); }
+.post-comments { margin-top: 14px; border-top: 0.5px solid var(--border); padding-top: 12px; }
+.post-no-comments { font-size: 13px; color: var(--text-3); padding: 4px 0 10px; }
+.post-comment { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+.post-comment-av {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; border: none; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 13px;
+  background-size: cover; background-position: center;
+}
+.post-comment-body {
+  flex: 1; min-width: 0; background: var(--bg-3); border-radius: 12px; padding: 8px 12px;
+}
+.post-comment-name {
+  border: none; background: transparent; cursor: pointer; padding: 0; display: block;
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px;
+}
+.post-comment-name:hover { color: var(--accent); }
+.post-comment-text { font-size: 14px; color: var(--text); line-height: 1.45; white-space: pre-wrap; word-wrap: break-word; }
+.post-comment-when { display: block; font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.post-comment-del {
+  border: none; background: transparent; cursor: pointer; color: var(--text-3); font-size: 18px;
+  line-height: 1; padding: 2px 6px; flex-shrink: 0;
+}
+.post-comment-del:hover { color: var(--accent); }
+.post-comment-input { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.post-comment-input input {
+  flex: 1; min-width: 0; border: 0.5px solid var(--border); background: var(--bg);
+  border-radius: 18px; padding: 9px 14px; font: inherit; font-size: 14px; color: var(--text); outline: none;
+}
+.post-comment-input input:focus { border-color: var(--accent); }
+.post-comment-input button {
+  border: none; background: var(--accent); color: #fff; cursor: pointer; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%; font-size: 15px;
+}
+.post-comment-input button:disabled { opacity: 0.5; cursor: default; }
+
+/* --- Карточки в правой колонке профиля (фото, места) --- */
+.pp-card { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.pp-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3);
+  margin-bottom: 12px; border: none; background: transparent; width: 100%; padding: 0;
+}
+.pp-card-head b { color: var(--text-2); font-size: 13px; }
+.pp-card-empty { font-size: 13px; padding: 4px 0; }
+.pp-card-more {
+  border: none; background: transparent; cursor: pointer; color: var(--accent);
+  font-size: 13px; font-weight: 600; padding: 8px 0 0; width: 100%; text-align: left;
+}
+.pp-list-item--btn { border: none; cursor: pointer; width: 100%; text-align: left; }
+.pp-list-item--btn:hover { background: var(--bg-3); }
+
+/* --- Сетка фотографий --- */
+.pp-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pp-photo {
+  aspect-ratio: 1 / 1; border: none; cursor: pointer; padding: 0; border-radius: var(--radius-sm);
+  background-size: cover; background-position: center; background-color: var(--bg-3);
+}
+.pp-photo:hover { opacity: 0.85; }
+
+/* --- Полноэкранный просмотр фото --- */
+.photo-lightbox {
+  position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(4px); padding: 24px; animation: fadeIn 0.18s ease;
+}
+.photo-lightbox img { max-width: 94vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,0.5); }
+.photo-lightbox-x {
+  position: absolute; top: 16px; right: 18px; width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* --- Правое меню «Друзья» --- */
+.friends-rail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.frail-card { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.frail-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 12px;
+}
+.frail-head b { color: var(--text-2); font-size: 13px; }
+.frail-head--btn { border: none; background: transparent; width: 100%; cursor: pointer; padding: 0; }
+.frail-head--btn:hover span { color: var(--accent); }
+.frail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.frail-tile { border: none; background: transparent; cursor: pointer; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
+.frail-av {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 20px;
+  background-size: cover; background-position: center;
+}
+.frail-dot {
+  position: absolute; right: 4px; bottom: 4px; width: 11px; height: 11px; border-radius: 50%;
+  background: #35c759; border: 2px solid var(--bg-2);
+}
+.frail-name {
+  font-size: 12px; color: var(--text-2); max-width: 100%; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; text-align: center;
+}
+.frail-tile:hover .frail-name { color: var(--accent); }
+.frail-requests {
+  border: none; background: var(--accent-soft); color: var(--accent); cursor: pointer;
+  font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 8px; width: 100%; text-align: left; margin-bottom: 12px;
+}
+.frail-empty { font-size: 13px; color: var(--text-3); padding: 4px 0; }
+.frail-all {
+  border: none; background: transparent; cursor: pointer; color: var(--accent);
+  font-size: 13px; font-weight: 600; padding: 10px 0 0; width: 100%; text-align: left;
+}
+
+/* --- Обложка в редактировании профиля --- */
+.ep-cover-edit {
+  display: flex; gap: 16px; align-items: center; margin-bottom: 20px;
+  background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px;
+}
+.ep-cover-preview {
+  width: 150px; height: 84px; border-radius: var(--radius); flex-shrink: 0;
+  background-size: cover; background-position: center; background-color: var(--bg-3);
+}
+.ep-cover-meta { min-width: 0; }
+@media (max-width: 520px) {
+  .ep-cover-edit { flex-direction: column; align-items: stretch; }
+  .ep-cover-preview { width: 100%; height: 110px; }
+}

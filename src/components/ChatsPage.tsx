@@ -59,6 +59,7 @@ interface ChatsPageProps {
   openWith?: ChatUser | null; // открыть диалог с этим пользователем (например, из «Друзей»)
   onOpenedWith?: () => void; // сообщить, что openWith обработан
   onOpenProfile?: (id: number) => void; // клик по нику собеседника → его профиль
+  onRead?: () => void; // прочитали чат (пометили на сервере) — обновить общий счётчик
 }
 
 export default function ChatsPage({
@@ -68,6 +69,7 @@ export default function ChatsPage({
   openWith = null,
   onOpenedWith,
   onOpenProfile,
+  onRead,
 }: ChatsPageProps) {
   const { t, locale } = useI18n();
   const [chats, setChats] = useState<ChatListItem[]>([]);
@@ -102,13 +104,12 @@ export default function ChatsPage({
   const activeIdRef = useRef<number | null>(null);
 
   const loadChats = useCallback(async () => {
-    try {
-      const [c, g] = await Promise.all([api.chatList(), api.groupList()]);
-      setChats(c);
-      setGroups(g);
-    } catch {
-      /* молча — это фоновый опрос */
-    }
+    // Грузим личные чаты и группы НЕЗАВИСИМО: если один запрос упадёт (например,
+    // старый бэкенд без групп), второй всё равно покажется — раньше Promise.all
+    // ронял оба, и список выглядел пустым, хотя переписки есть.
+    const [c, g] = await Promise.allSettled([api.chatList(), api.groupList()]);
+    if (c.status === 'fulfilled') setChats(c.value);
+    if (g.status === 'fulfilled') setGroups(g.value);
   }, []);
 
   const loadMessages = useCallback(async (uid: number) => {
@@ -151,10 +152,13 @@ export default function ChatsPage({
     setLoading(true);
     loadMessages(activeUserId).finally(() => {
       if (activeIdRef.current === activeUserId) setLoading(false);
+      // Сервер пометил входящие прочитанными — сразу обновляем список и общий счётчик.
+      loadChats();
+      onRead?.();
     });
     const t = setInterval(() => loadMessages(activeUserId), 1500);
     return () => clearInterval(t);
-  }, [activeUserId, loadMessages]);
+  }, [activeUserId, loadMessages, loadChats, onRead]);
 
   // Сообщения активной группы: загрузка + опрос.
   useEffect(() => {
@@ -164,6 +168,9 @@ export default function ChatsPage({
     setLoading(true);
     loadGroupMessages(gid).finally(() => {
       if (activeGroupRef.current === gid) setLoading(false);
+      // Группу тоже пометили прочитанной — обновляем список и общий счётчик.
+      loadChats();
+      onRead?.();
     });
     const tm = setInterval(() => loadGroupMessages(gid), 1500);
     return () => clearInterval(tm);

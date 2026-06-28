@@ -75,20 +75,22 @@ authRouter.post('/register', (req, res) => {
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
   // --- Проверяем входные данные ---
+  // К каждой ошибке добавляем стабильный code — по нему фронт показывает текст
+  // на нужном языке (иначе ошибка всегда была бы на русском от сервера).
   if (!name || !email || !handle || !password)
-    return res.status(400).json({ error: 'Заполните имя, email, ник и пароль' });
+    return res.status(400).json({ error: 'Заполните имя, email, ник и пароль', code: 'fields_required' });
   if (!/^\S+@\S+\.\S+$/.test(email))
-    return res.status(400).json({ error: 'Похоже, email неправильный' });
+    return res.status(400).json({ error: 'Похоже, email неправильный', code: 'email_invalid' });
   if (password.length < 6)
-    return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
+    return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов', code: 'password_short' });
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(handle))
-    return res.status(400).json({ error: 'Ник: 3–20 символов, латиница, цифры или _' });
+    return res.status(400).json({ error: 'Ник: 3–20 символов, латиница, цифры или _', code: 'handle_invalid' });
 
   // --- Проверяем, что email и ник ещё не заняты ---
   if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email))
-    return res.status(409).json({ error: 'Этот email уже зарегистрирован' });
+    return res.status(409).json({ error: 'Этот email уже зарегистрирован', code: 'email_taken' });
   if (db.prepare('SELECT 1 FROM users WHERE handle = ?').get(handle))
-    return res.status(409).json({ error: 'Этот ник уже занят' });
+    return res.status(409).json({ error: 'Этот ник уже занят', code: 'handle_taken' });
 
   // --- Создаём пользователя ---
   const color = COLORS[Math.floor(Math.random() * COLORS.length)];
@@ -111,7 +113,7 @@ authRouter.post('/register', (req, res) => {
   } catch (e) {
     // Подстраховка: уникальный индекс не даст создать дубль (на случай гонки).
     if (e && e.code === 'SQLITE_CONSTRAINT_UNIQUE')
-      return res.status(409).json({ error: 'Email или ник уже заняты' });
+      return res.status(409).json({ error: 'Email или ник уже заняты', code: 'email_or_handle_taken' });
     throw e; // прочие ошибки уйдут в общий обработчик ошибок
   }
 
@@ -126,14 +128,16 @@ authRouter.post('/login', (req, res) => {
   // Слишком много неудачных попыток с этого IP — временно не пускаем.
   const blockedMins = loginBlockedMinutes(req);
   if (blockedMins > 0)
-    return res
-      .status(429)
-      .json({ error: `Слишком много попыток входа. Попробуйте через ${blockedMins} мин.` });
+    return res.status(429).json({
+      error: `Слишком много попыток входа. Попробуйте через ${blockedMins} мин.`,
+      code: 'login_blocked',
+      minutes: blockedMins,
+    });
 
   const email = String(req.body?.email ?? '').trim().toLowerCase();
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
   if (!email || !password)
-    return res.status(400).json({ error: 'Введите email и пароль' });
+    return res.status(400).json({ error: 'Введите email и пароль', code: 'login_fields' });
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
 
@@ -141,7 +145,7 @@ authRouter.post('/login', (req, res) => {
   // чтобы не подсказывать злоумышленнику, какой email зарегистрирован.
   if (!user || !verifyPassword(password, user.password_hash)) {
     noteFailedLogin(req);
-    return res.status(401).json({ error: 'Неверный email или пароль' });
+    return res.status(401).json({ error: 'Неверный email или пароль', code: 'login_invalid' });
   }
 
   clearLoginAttempts(req); // успешный вход — сбрасываем счётчик
@@ -172,6 +176,7 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   const letter = b.letter !== undefined ? String(b.letter).trim().slice(0, 2) : user.letter;
   const handle = b.handle !== undefined ? String(b.handle).trim() : user.handle;
   const avatar = b.avatar !== undefined ? String(b.avatar) : user.avatar;
+  const cover = b.cover !== undefined ? String(b.cover) : user.cover;
   const showOnline = b.show_online !== undefined ? (b.show_online ? 1 : 0) : user.show_online;
   const birthdate = b.birthdate !== undefined ? String(b.birthdate).trim() : user.birthdate;
   const gender = b.gender !== undefined ? String(b.gender).trim() : user.gender;
@@ -184,7 +189,10 @@ authRouter.patch('/me', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Ник: 3–20 символов, латиница, цифры или _' });
   // Аватар-фото: либо пусто, либо корректный data:image небольшого размера (~1 МБ).
   if (avatar && (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(avatar) || avatar.length > 1_500_000))
-    return res.status(400).json({ error: 'Картинка не подходит (формат или размер)' });
+    return res.status(400).json({ error: 'Картинка не подходит (формат или размер)', code: 'avatar_bad' });
+  // Обложка профиля (шапка): тоже data:image, но допускаем чуть больше (~3 МБ).
+  if (cover && (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(cover) || cover.length > 3_000_000))
+    return res.status(400).json({ error: 'Обложка не подходит (формат или размер)', code: 'cover_bad' });
   if (!validBirthdate(birthdate))
     return res.status(400).json({ error: 'Неверная дата рождения' });
   if (!GENDERS.includes(gender)) return res.status(400).json({ error: 'Неверное значение пола' });
@@ -194,9 +202,9 @@ authRouter.patch('/me', requireAuth, (req, res) => {
     return res.status(409).json({ error: 'Этот ник уже занят' });
 
   db.prepare(
-    'UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ?, show_online = ?, birthdate = ?, gender = ?, interests = ?, show_birthyear = ? WHERE id = ?',
+    'UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ?, cover = ?, show_online = ?, birthdate = ?, gender = ?, interests = ?, show_birthyear = ? WHERE id = ?',
   ).run(
-    name, bio, city, color, letter, handle, avatar, showOnline,
+    name, bio, city, color, letter, handle, avatar, cover, showOnline,
     birthdate, gender, interests, showBirthyear, req.userId,
   );
 

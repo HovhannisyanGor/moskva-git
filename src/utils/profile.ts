@@ -13,6 +13,7 @@ export interface DisplayUser {
   letter: string;
   color: string;
   avatar: string;
+  cover: string;
   city: string;
   createdAt: string; // ISO — форматируем в компоненте под язык
   bio: string;
@@ -107,6 +108,7 @@ export function buildDisplayUser(
     letter: u.letter,
     color: u.color,
     avatar: u.avatar ?? '',
+    cover: u.cover ?? '',
     city: u.city,
     bio: u.bio,
     email: u.email,

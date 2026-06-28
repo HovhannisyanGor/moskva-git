@@ -67,6 +67,7 @@ usersRouter.get('/:id', (req, res) => {
       color: u.color,
       letter: u.letter,
       avatar: u.avatar || '',
+      cover: u.cover || '',
       online: u.show_online === 0 ? false : isOnline(u),
       bio: u.bio || '',
       city: u.city || '',

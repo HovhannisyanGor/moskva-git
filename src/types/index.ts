@@ -73,6 +73,7 @@ export interface AchievementsState {
 export type View =
   | 'map'
   | 'places'
+  | 'feed'
   | 'achievements'
   | 'profile'
   | 'edit-profile'

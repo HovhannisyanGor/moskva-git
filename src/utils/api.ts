@@ -6,6 +6,19 @@ const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const TOKEN_KEY = 'localee_token';
 
+// Ошибка от сервера. Кроме текста несёт стабильный code (например 'login_invalid')
+// и доп. данные (data) — по ним фронт показывает сообщение на нужном языке.
+export class ApiError extends Error {
+  code: string;
+  data: Record<string, unknown>;
+  constructor(message: string, code = '', data: Record<string, unknown> = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+    this.data = data;
+  }
+}
+
 export function getToken(): string {
   return localStorage.getItem(TOKEN_KEY) || '';
 }
@@ -27,6 +40,7 @@ export interface ApiUser {
   bio: string;
   city: string;
   avatar: string;
+  cover: string; // обложка профиля (шапка) — data URL или ''
   role: 'user' | 'admin';
   show_online: number; // 1 = показывать «в сети» другим (приватность)
   birthdate: string; // 'YYYY-MM-DD' или '' — дата рождения
@@ -44,6 +58,7 @@ export interface PublicUser {
   color: string;
   letter: string;
   avatar: string;
+  cover: string; // обложка профиля (шапка) — data URL или ''
   online: boolean;
   bio: string;
   city: string;
@@ -161,8 +176,33 @@ export interface GroupMessageItem {
   sender: GroupSender | null;
 }
 
+// --- Социальная лента (посты, лайки, комментарии, фото) ---
+export interface PostItem {
+  id: number;
+  author: ChatUser | null;
+  text: string;
+  image: string; // картинка поста (data URL) или ''
+  createdAt: string;
+  likeCount: number;
+  liked: boolean; // лайкнул ли я
+  commentCount: number;
+  mine: boolean; // мой ли пост (можно удалить)
+}
+export interface PostComment {
+  id: number;
+  text: string;
+  createdAt: string;
+  author: ChatUser | null;
+  mine: boolean;
+}
+export interface PhotoItem {
+  postId: number;
+  image: string;
+  createdAt: string;
+}
+
 // Универсальный запрос: добавляет токен (если нужно), разбирает JSON,
-// а при ошибке кидает понятное сообщение от сервера.
+// а при ошибке кидает ApiError с code от сервера (для перевода сообщения).
 async function request<T>(
   path: string,
   options: { method?: string; body?: unknown; auth?: boolean } = {},
@@ -181,12 +221,13 @@ async function request<T>(
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
   } catch {
-    throw new Error('Не удалось связаться с сервером. Он запущен?');
+    throw new ApiError('Не удалось связаться с сервером. Он запущен?', 'network');
   }
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error || `Ошибка ${res.status}`);
+    const d = data as { error?: string; code?: string; [k: string]: unknown };
+    throw new ApiError(d.error || `Ошибка ${res.status}`, d.code || '', d);
   }
   return data as T;
 }
@@ -217,7 +258,7 @@ export const api = {
     return data.user;
   },
 
-  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar' | 'show_online' | 'birthdate' | 'gender' | 'show_birthyear'>> & { interests?: string | string[] }) {
+  async updateMe(patch: Partial<Pick<ApiUser, 'name' | 'handle' | 'bio' | 'city' | 'color' | 'letter' | 'avatar' | 'cover' | 'show_online' | 'birthdate' | 'gender' | 'show_birthyear'>> & { interests?: string | string[] }) {
     const data = await request<{ user: ApiUser }>('/api/auth/me', {
       method: 'PATCH',
       body: patch,
@@ -412,6 +453,45 @@ export const api = {
   },
   async adminResolveSupport(id: number) {
     return request<{ ok: boolean }>(`/api/support/${id}/resolve`, { method: 'PATCH', auth: true });
+  },
+
+  // --- Лента / посты ---
+  async feed(scope: 'all' | 'friends' = 'all') {
+    const data = await request<{ posts: PostItem[] }>(`/api/posts?scope=${scope}`, { auth: true });
+    return data.posts;
+  },
+  async userPosts(userId: number) {
+    const data = await request<{ posts: PostItem[] }>(`/api/posts/user/${userId}`, { auth: true });
+    return data.posts;
+  },
+  async userPhotos(userId: number) {
+    const data = await request<{ photos: PhotoItem[] }>(`/api/posts/photos/${userId}`, { auth: true });
+    return data.photos;
+  },
+  async createPost(input: { text: string; image?: string }) {
+    const data = await request<{ post: PostItem }>('/api/posts', { method: 'POST', body: input, auth: true });
+    return data.post;
+  },
+  async deletePost(id: number) {
+    return request<{ ok: boolean; deleted: number }>(`/api/posts/${id}`, { method: 'DELETE', auth: true });
+  },
+  async likePost(id: number) {
+    return request<{ liked: boolean; likeCount: number }>(`/api/posts/${id}/like`, { method: 'POST', auth: true });
+  },
+  async postComments(id: number) {
+    const data = await request<{ comments: PostComment[] }>(`/api/posts/${id}/comments`, { auth: true });
+    return data.comments;
+  },
+  async addComment(id: number, text: string) {
+    const data = await request<{ comment: PostComment }>(`/api/posts/${id}/comments`, {
+      method: 'POST',
+      body: { text },
+      auth: true,
+    });
+    return data.comment;
+  },
+  async deleteComment(id: number) {
+    return request<{ ok: boolean; deleted: number }>(`/api/posts/comments/${id}`, { method: 'DELETE', auth: true });
   },
 
   // --- Метки на карте ---

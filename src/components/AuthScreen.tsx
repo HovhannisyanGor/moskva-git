@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api, type ApiUser } from '../utils/api';
+import { api, ApiError, type ApiUser } from '../utils/api';
 import { useTheme } from '../hooks/useTheme';
 import { useI18n } from '../i18n';
 import OnboardingProfile from './OnboardingProfile';
@@ -18,6 +18,20 @@ export default function AuthScreen({
 }) {
   const { effective } = useTheme();
   const { t } = useI18n();
+
+  // Ошибку от сервера показываем на выбранном языке: у ApiError есть code, по нему
+  // берём перевод 'autherr.<code>'. Если перевода нет — показываем текст сервера.
+  function describeError(e: unknown): string {
+    if (e instanceof ApiError && e.code) {
+      const key = `autherr.${e.code}`;
+      const params =
+        e.code === 'login_blocked' ? { minutes: String(e.data.minutes ?? '') } : undefined;
+      const translated = t(key, params);
+      if (translated !== key) return translated;
+      return e.message;
+    }
+    return e instanceof Error ? e.message : t('auth.error');
+  }
   const [tab, setTab] = useState<'login' | 'register'>(initialTab);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,7 +53,7 @@ export default function AuthScreen({
         onAuthed(await api.login({ email, password }));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('auth.error'));
+      setError(describeError(e));
     } finally {
       setBusy(false);
     }

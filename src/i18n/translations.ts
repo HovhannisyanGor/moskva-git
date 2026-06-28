@@ -96,6 +96,19 @@ export const ru: Record<string, string> = {
   'auth.signIn': 'Войти',
   'auth.error': 'Ошибка',
 
+  // Ошибки входа/регистрации (по code от сервера — чтобы показать на нужном языке)
+  'autherr.network': 'Не удалось связаться с сервером. Он запущен?',
+  'autherr.fields_required': 'Заполните имя, email, ник и пароль',
+  'autherr.email_invalid': 'Похоже, email неправильный',
+  'autherr.password_short': 'Пароль должен быть минимум 6 символов',
+  'autherr.handle_invalid': 'Ник: 3–20 символов, латиница, цифры или _',
+  'autherr.email_taken': 'Этот email уже зарегистрирован',
+  'autherr.handle_taken': 'Этот ник уже занят',
+  'autherr.email_or_handle_taken': 'Email или ник уже заняты',
+  'autherr.login_fields': 'Введите email и пароль',
+  'autherr.login_invalid': 'Неверный email или пароль',
+  'autherr.login_blocked': 'Слишком много попыток входа. Попробуйте через {minutes} мин.',
+
   // Онбординг (заполнение профиля после регистрации)
   'onb.title': 'Расскажите о себе',
   'onb.sub': 'Так друзьям будет проще вас узнать. Можно пропустить и заполнить позже.',
@@ -323,6 +336,54 @@ export const ru: Record<string, string> = {
   'ai.opt.interests.nature': 'Природа',
   'ai.opt.interests.art': 'Искусство',
   'ai.opt.interests.food': 'Гастрономия',
+
+  // Лента и посты
+  'nav.feed': 'Лента',
+  'feed.title': 'Лента',
+  'feed.tabAll': 'Все',
+  'feed.tabFriends': 'Друзья',
+  'feed.empty': 'Пока нет постов. Будьте первым — напишите что-нибудь!',
+  'feed.emptyFriends': 'У вас и друзей пока нет постов. Добавьте друзей или напишите первый пост.',
+  'post.placeholder': 'Что нового?',
+  'post.publish': 'Опубликовать',
+  'post.posting': 'Публикуем…',
+  'post.addPhoto': 'Фото',
+  'post.removePhoto': 'Убрать фото',
+  'post.like': 'Нравится',
+  'post.comments': 'Комментарии',
+  'post.commentPh': 'Написать комментарий…',
+  'post.noComments': 'Комментариев пока нет',
+  'post.send': 'Отправить',
+  'post.delete': 'Удалить',
+  'post.deleteConfirm': 'Удалить этот пост? Действие необратимо.',
+  'post.deleteCommentConfirm': 'Удалить комментарий?',
+  'post.you': 'Вы',
+
+  // Профиль: записи, фото, места
+  'profile.wall': 'Записи',
+  'profile.photos': 'Фотографии',
+  'profile.noPosts': 'Пока нет записей',
+  'profile.noPostsOther': 'У пользователя пока нет записей',
+  'profile.favPlaces': 'Любимые места',
+  'profile.noFav': 'Нет любимых мест. Откройте место на карте и нажмите ★.',
+  'profile.allPhotos': 'Показать все',
+  'profile.changeCover': 'Сменить обложку',
+  'profile.changePhoto': 'Сменить фото',
+  'profile.uploading': 'Загрузка…',
+
+  // Обложка (редактирование профиля)
+  'ep.cover': 'Обложка профиля',
+  'ep.coverSub': 'Широкая картинка-шапка вверху профиля',
+  'ep.uploadCover': 'Загрузить обложку',
+  'ep.replaceCover': 'Заменить обложку',
+  'ep.removeCover': 'Убрать обложку',
+
+  // Боковое меню друзей
+  'fside.online': 'Друзья онлайн',
+  'fside.title': 'Друзья',
+  'fside.all': 'Все друзья',
+  'fside.requests': 'заявки',
+  'fside.empty': 'Пока нет друзей',
 };
 
 export const en: Record<string, string> = {
@@ -416,6 +477,19 @@ export const en: Record<string, string> = {
   'auth.createAccount': 'Create account',
   'auth.signIn': 'Log in',
   'auth.error': 'Error',
+
+  // Login/registration errors (by server code — so the text shows in the chosen language)
+  'autherr.network': "Couldn't reach the server. Is it running?",
+  'autherr.fields_required': 'Fill in your name, email, username and password',
+  'autherr.email_invalid': 'That email looks wrong',
+  'autherr.password_short': 'Password must be at least 6 characters',
+  'autherr.handle_invalid': 'Username: 3–20 chars, latin letters, digits or _',
+  'autherr.email_taken': 'This email is already registered',
+  'autherr.handle_taken': 'This username is already taken',
+  'autherr.email_or_handle_taken': 'Email or username already taken',
+  'autherr.login_fields': 'Enter your email and password',
+  'autherr.login_invalid': 'Wrong email or password',
+  'autherr.login_blocked': 'Too many login attempts. Try again in {minutes} min.',
 
   // Onboarding
   'onb.title': 'Tell us about yourself',
@@ -644,6 +718,54 @@ export const en: Record<string, string> = {
   'ai.opt.interests.nature': 'Nature',
   'ai.opt.interests.art': 'Art',
   'ai.opt.interests.food': 'Food',
+
+  // Feed and posts
+  'nav.feed': 'Feed',
+  'feed.title': 'Feed',
+  'feed.tabAll': 'All',
+  'feed.tabFriends': 'Friends',
+  'feed.empty': 'No posts yet. Be the first — write something!',
+  'feed.emptyFriends': 'You and your friends have no posts yet. Add friends or write the first post.',
+  'post.placeholder': "What's new?",
+  'post.publish': 'Publish',
+  'post.posting': 'Posting…',
+  'post.addPhoto': 'Photo',
+  'post.removePhoto': 'Remove photo',
+  'post.like': 'Like',
+  'post.comments': 'Comments',
+  'post.commentPh': 'Write a comment…',
+  'post.noComments': 'No comments yet',
+  'post.send': 'Send',
+  'post.delete': 'Delete',
+  'post.deleteConfirm': "Delete this post? This can't be undone.",
+  'post.deleteCommentConfirm': 'Delete this comment?',
+  'post.you': 'You',
+
+  // Profile: posts, photos, places
+  'profile.wall': 'Posts',
+  'profile.photos': 'Photos',
+  'profile.noPosts': 'No posts yet',
+  'profile.noPostsOther': 'This user has no posts yet',
+  'profile.favPlaces': 'Favorite places',
+  'profile.noFav': 'No favorite places. Open a place on the map and tap ★.',
+  'profile.allPhotos': 'Show all',
+  'profile.changeCover': 'Change cover',
+  'profile.changePhoto': 'Change photo',
+  'profile.uploading': 'Uploading…',
+
+  // Cover (edit profile)
+  'ep.cover': 'Profile cover',
+  'ep.coverSub': 'A wide header image at the top of your profile',
+  'ep.uploadCover': 'Upload cover',
+  'ep.replaceCover': 'Replace cover',
+  'ep.removeCover': 'Remove cover',
+
+  // Friends sidebar
+  'fside.online': 'Friends online',
+  'fside.title': 'Friends',
+  'fside.all': 'All friends',
+  'fside.requests': 'requests',
+  'fside.empty': 'No friends yet',
 };
 
 export const DICTS: Record<Lang, Record<string, string>> = { ru, en };

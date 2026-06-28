@@ -11,6 +11,7 @@ import ProfilePage from './components/ProfilePage';
 import EditProfilePage from './components/EditProfilePage';
 import ChatsPage from './components/ChatsPage';
 import FriendsPage from './components/FriendsPage';
+import FeedPage from './components/FeedPage';
 import FavoritesPage from './components/FavoritesPage';
 import UserProfilePage from './components/UserProfilePage';
 import SettingsPage from './components/SettingsPage';
@@ -41,6 +42,11 @@ const ICON = {
       <path d="M8 21l8 0" /><path d="M12 17l0 4" /><path d="M7 4l10 0" /><path d="M17 4v8a5 5 0 0 1 -10 0v-8" /><path d="M3 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
     </svg>
   ),
+  feed: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 13h8M8 16.5h5" />
+    </svg>
+  ),
   friends: (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5" /><path d="M16 5.2A3 3 0 0 1 17 11M21 20c0-2.6-1.5-4.2-3.5-4.8" />
@@ -60,8 +66,8 @@ const ICON = {
 
 const MOBILE_NAV: { view: View; labelKey: string; icon: ReactNode }[] = [
   { view: 'map', labelKey: 'nav.map', icon: ICON.map },
+  { view: 'feed', labelKey: 'nav.feed', icon: ICON.feed },
   { view: 'achievements', labelKey: 'nav.awards', icon: ICON.trophy },
-  { view: 'friends', labelKey: 'nav.friends', icon: ICON.friends },
   { view: 'chats', labelKey: 'nav.chats', icon: ICON.chats },
   { view: 'profile', labelKey: 'nav.profile', icon: ICON.user },
 ];
@@ -258,7 +264,7 @@ export default function App() {
   const theme = useTheme();
   const { t, lang } = useI18n();
   // Непрочитанные сообщения (для бейджа) + всплывашка о новом сообщении.
-  const { totalUnread, toast, dismissToast } = useChatNotifications(!!currentUser, activeChatUser);
+  const { totalUnread, toast, dismissToast, refresh: refreshUnread } = useChatNotifications(!!currentUser, activeChatUser);
   // Нижняя шторка: 0 = свёрнуто (пик), 1 = полностью раскрыто
   const [snap, setSnap] = useState(0);
   const [dragH, setDragH] = useState<number | null>(null);
@@ -417,14 +423,27 @@ export default function App() {
             />
           </div>
         );
+      case 'feed':
+        return (
+          <FeedPage
+            me={{ avatar: displayUser.avatar, color: displayUser.color, letter: displayUser.letter }}
+            onOpenProfile={openUserProfile}
+            onOpenFriends={() => navigate('friends')}
+          />
+        );
       case 'profile':
         return (
           <ProfilePage
             user={displayUser}
             badges={displayBadges(unlockedBadges)}
             recent={recentPlaces(visits, lang)}
+            favorites={favorites}
+            meId={meId}
             onEdit={() => navigate('edit-profile')}
             onOpenFriends={() => navigate('friends')}
+            onOpenProfile={openUserProfile}
+            onPlaceClick={handleAchievementPlaceClick}
+            onUserUpdated={setCurrentUser}
           />
         );
       case 'edit-profile':
@@ -445,6 +464,7 @@ export default function App() {
             openWith={chatWith}
             onOpenedWith={() => setChatWith(null)}
             onOpenProfile={openUserProfile}
+            onRead={refreshUnread}
           />
         );
       case 'friends':
@@ -453,7 +473,12 @@ export default function App() {
         return <FavoritesPage favorites={favorites} onPlaceClick={handleAchievementPlaceClick} />;
       case 'user':
         return profileUserId != null ? (
-          <UserProfilePage userId={profileUserId} onBack={() => navigate(prevView)} onMessage={openChatWith} />
+          <UserProfilePage
+            userId={profileUserId}
+            onBack={() => navigate(prevView)}
+            onMessage={openChatWith}
+            onOpenProfile={openUserProfile}
+          />
         ) : null;
       case 'settings':
         return currentUser ? (

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { api, type ApiUser } from '../utils/api';
 import type { DisplayUser } from '../utils/profile';
 import { useI18n } from '../i18n';
-import { fileToAvatar } from '../utils/avatar';
+import { fileToAvatar, fileToImage } from '../utils/avatar';
 import { GENDER_OPTS, CITY_OPTS } from './profileFields';
 import InterestsInput from './InterestsInput';
 
@@ -30,6 +30,7 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
   const [avatarChar, setAvatarChar] = useState(u.letter); // буква или эмодзи на аватаре
   const [avatarColor, setAvatarColor] = useState(u.color);
   const [avatarImg, setAvatarImg] = useState(u.avatar || ''); // фото (data URL) или пусто
+  const [coverImg, setCoverImg] = useState(u.cover || ''); // обложка (data URL) или пусто
   const [name, setName] = useState(u.name);
   const [handle, setHandle] = useState(u.handle);
   const [bio, setBio] = useState(u.bio);
@@ -41,8 +42,25 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
 
   const usingLetter = !EMOJIS.includes(avatarChar);
+
+  async function onPickCover(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t('ep.fileTooBig'));
+      return;
+    }
+    try {
+      setError('');
+      setCoverImg(await fileToImage(file, 1280, 0.82));
+    } catch {
+      setError(t('ep.imageError'));
+    }
+  }
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -88,6 +106,7 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
         color: avatarColor,
         letter: avatarChar,
         avatar: avatarImg,
+        cover: coverImg,
       });
       onSaved(updated);
       onBack();
@@ -114,6 +133,30 @@ export default function EditProfilePage({ user, onSaved, onBack, onResetAchievem
           {t('ep.back')}
         </button>
         <h1 className="ep-title">{t('ep.title')}</h1>
+
+        <div className="ep-cover-edit">
+          <div
+            className="ep-cover-preview"
+            style={
+              coverImg
+                ? { backgroundImage: `url(${coverImg})` }
+                : { background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}99)` }
+            }
+          />
+          <div className="ep-cover-meta">
+            <div className="ep-avatar-title">{t('ep.cover')}</div>
+            <div className="ep-avatar-sub">{t('ep.coverSub')}</div>
+            <input ref={coverRef} type="file" accept="image/*" hidden onChange={onPickCover} />
+            <button className="ep-upload" type="button" onClick={() => coverRef.current?.click()}>
+              {coverImg ? t('ep.replaceCover') : t('ep.uploadCover')}
+            </button>
+            {coverImg && (
+              <button className="ep-upload" type="button" onClick={() => setCoverImg('')} style={{ marginLeft: 8 }}>
+                {t('ep.removeCover')}
+              </button>
+            )}
+          </div>
+        </div>
 
         <div className="ep-avatar-row">
           <div className="ep-avatar" style={avatarStyle}>

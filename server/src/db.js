@@ -67,6 +67,10 @@ if (!userCols.some((c) => c.name === 'interests')) {
 if (!userCols.some((c) => c.name === 'show_birthyear')) {
   db.exec('ALTER TABLE users ADD COLUMN show_birthyear INTEGER NOT NULL DEFAULT 1');
 }
+// Обложка профиля (шапка, как «cover» в соцсетях). Хранится как data URL (или пусто).
+if (!userCols.some((c) => c.name === 'cover')) {
+  db.exec("ALTER TABLE users ADD COLUMN cover TEXT NOT NULL DEFAULT ''");
+}
 
 // Бутстрап администраторов: всех, чьи email перечислены в ADMIN_EMAILS, повышаем
 // до admin при старте. Безопасно гонять каждый раз. Роли, выданные внутри самой
@@ -178,6 +182,42 @@ db.exec(`
   );
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_pins_created ON map_pins(created_at)');
+
+// --- Социальная лента: посты, лайки и комментарии ---
+// Пост = текст и/или картинка (картинка хранится как data URL, как и аватары).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS posts (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    text       TEXT    NOT NULL DEFAULT '',
+    image      TEXT    NOT NULL DEFAULT '',
+    created_at TEXT    NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_posts_user ON posts(user_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at)');
+
+// Лайки: одна строка на пару (пост, пользователь) — нельзя лайкнуть дважды.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS post_likes (
+    post_id    INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    created_at TEXT    NOT NULL,
+    PRIMARY KEY (post_id, user_id)
+  );
+`);
+
+// Комментарии под постами.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS post_comments (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id    INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    text       TEXT    NOT NULL,
+    created_at TEXT    NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_pcomments_post ON post_comments(post_id)');
 
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

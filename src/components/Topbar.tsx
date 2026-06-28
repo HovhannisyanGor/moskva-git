@@ -19,6 +19,7 @@ interface TopbarProps {
 
 const NAV: { view: View; labelKey: string; icon?: string }[] = [
   { view: 'map', labelKey: 'nav.map' },
+  { view: 'feed', labelKey: 'nav.feed' },
   { view: 'achievements', labelKey: 'nav.achievements', icon: 'trophy' },
   { view: 'chats', labelKey: 'nav.chats', icon: 'chat' },
 ];
