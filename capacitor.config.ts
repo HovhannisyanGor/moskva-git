@@ -1,0 +1,21 @@
+import type { CapacitorConfig } from '@capacitor/cli';
+
+// Конфиг мобильного приложения (iOS + Android).
+// Внутри приложения крутится тот же собранный сайт из dist/,
+// API берётся из .env.production (https://api.localee.ru).
+const config: CapacitorConfig = {
+  appId: 'ru.localee.app',
+  appName: 'Localee',
+  webDir: 'dist',
+  // Фон под WebView, пока грузится страница (совпадает с тёмной темой сайта)
+  backgroundColor: '#111111',
+  ios: {
+    // Контент не залезает под чёлку/индикатор — safe-area обрабатывает сам сайт
+    contentInset: 'automatic',
+  },
+  android: {
+    allowMixedContent: false,
+  },
+};
+
+export default config;
