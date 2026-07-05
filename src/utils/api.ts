@@ -220,8 +220,14 @@ async function request<T>(
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
-  } catch {
-    throw new ApiError('Не удалось связаться с сервером. Он запущен?', 'network');
+  } catch (e) {
+    // Показываем причину и адрес — иначе сетевые проблемы (CORS, DNS, WebView)
+    // невозможно отличить друг от друга по одинаковому сообщению.
+    const detail = e instanceof Error ? e.message : String(e);
+    throw new ApiError(
+      `Не удалось связаться с сервером (${BASE}): ${detail}`,
+      'network',
+    );
   }
 
   const data = await res.json().catch(() => ({}));

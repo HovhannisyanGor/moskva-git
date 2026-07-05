@@ -8,7 +8,8 @@
   --amber: #BA7517;
   --radius: 10px;
   --radius-sm: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
 }
 
 /* СВЕТЛАЯ ТЕМА — белый + красный */
@@ -1368,7 +1369,8 @@ html, body { background: var(--bg); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 20px;
+  padding: calc(24px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+           calc(24px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
   background: var(--bg);
 }
 .auth-logo { height: 38px; margin-bottom: 8px; }
@@ -1443,8 +1445,8 @@ html, body { background: var(--bg); }
 .auth-error { margin-top: 14px; color: var(--accent); font-size: 13px; text-align: center; }
 .auth-back {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
   background: transparent;
   border: none;
   color: var(--text-2);
@@ -1458,7 +1460,9 @@ html, body { background: var(--bg); }
 .landing { min-height: 100dvh; background: var(--bg); color: var(--text); overflow-y: auto; }
 .landing-nav {
   display: flex; align-items: center; justify-content: space-between;
-  max-width: 1000px; margin: 0 auto; padding: 18px 20px;
+  max-width: 1000px; margin: 0 auto;
+  padding: calc(14px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+           14px max(20px, env(safe-area-inset-left));
 }
 .landing-brand { display: flex; align-items: center; gap: 8px; }
 .landing-logo { height: 28px; }
@@ -1508,7 +1512,7 @@ html, body { background: var(--bg); }
 .landing-step-text { font-size: 15px; color: var(--text-2); line-height: 1.5; }
 
 .landing-final { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; text-align: center; }
-.landing-footer { text-align: center; padding: 24px 20px 40px; color: var(--text-3); font-size: 13px; }
+.landing-footer { text-align: center; padding: 24px 20px calc(40px + env(safe-area-inset-bottom)); color: var(--text-3); font-size: 13px; }
 
 @media (max-width: 600px) {
   .landing-title { font-size: 32px; }

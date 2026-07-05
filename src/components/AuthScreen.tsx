@@ -22,6 +22,9 @@ export default function AuthScreen({
   // Ошибку от сервера показываем на выбранном языке: у ApiError есть code, по нему
   // берём перевод 'autherr.<code>'. Если перевода нет — показываем текст сервера.
   function describeError(e: unknown): string {
+    // Сетевые ошибки показываем как есть: в message уже адрес сервера и причина —
+    // без них не отличить CORS от DNS или недоступного сервера.
+    if (e instanceof ApiError && e.code === 'network') return e.message;
     if (e instanceof ApiError && e.code) {
       const key = `autherr.${e.code}`;
       const params =

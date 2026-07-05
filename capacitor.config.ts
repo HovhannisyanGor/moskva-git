@@ -16,6 +16,12 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    // Запросы к API идут через нативный сетевой слой (URLSession/OkHttp),
+    // а не через WebKit: в WKWebView fetch на внешний https падал с «Load failed»,
+    // заодно исчезает зависимость от CORS.
+    CapacitorHttp: { enabled: true },
+  },
 };
 
 export default config;

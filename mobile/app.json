@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Localee",
+    "slug": "localee",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#121013",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ru.localee.app"
+    },
+    "android": {
+      "package": "ru.localee.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#121013",
+        "foregroundImage": "./assets/logo.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
