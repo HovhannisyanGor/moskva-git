@@ -1,0 +1,8 @@
+# Xcode / сборка
+build/
+DerivedData/
+*.xcuserstate
+**/xcuserdata/
+.DS_Store
+
+# project.yml — источник; сам .xcodeproj коммитим, чтобы друг открывал одним кликом
