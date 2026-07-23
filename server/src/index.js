@@ -14,6 +14,7 @@ import { supportRouter } from './routes/support.js';
 import { pinsRouter } from './routes/pins.js';
 import { postsRouter } from './routes/posts.js';
 import { visitsRouter } from './routes/visits.js';
+import { placesRouter } from './routes/places.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -52,6 +53,8 @@ app.use('/api/pins', pinsRouter);
 app.use('/api/posts', postsRouter);
 // Достижения: посещённые места (общие для сайта и приложения)
 app.use('/api/visits', visitsRouter);
+// Справочник мест — единый для сайта и приложения (без авторизации)
+app.use('/api/places', placesRouter);
 
 // Если запрошенного маршрута нет — отвечаем аккуратным JSON, а не HTML.
 app.use((req, res) => res.status(404).json({ error: 'Маршрут не найден' }));

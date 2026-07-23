@@ -1,4 +1,25 @@
-import type { Visit } from '../types';
+import type { Visit, Place } from '../types';
+
+// Место в том виде, в каком его отдаёт сервер (lat/lng по отдельности).
+interface ServerPlace {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  address: string;
+  lat: number;
+  lng: number;
+  price: number;
+  duration: number;
+  rating: number;
+  ratingCount: number;
+  tags: string[];
+  imageUrl: string;
+  photos: string[];
+  opensAt: string;
+  closesAt: string;
+  ticketUrl: string;
+}
 
 // Клиент для общения фронта с бэкендом Localee.
 // Адрес сервера берём из переменной окружения VITE_API_URL.
@@ -507,6 +528,32 @@ export const api = {
   },
   async deletePin(id: number) {
     return request<{ ok: boolean }>(`/api/pins/${id}`, { method: 'DELETE', auth: true });
+  },
+
+  // --- Места ---
+  // Сервер отдаёт lat/lng по отдельности (как и в остальных ответах), а на
+  // сайте исторически используется coords: [lat, lng] — переводим здесь,
+  // чтобы не переписывать компоненты.
+  async places(): Promise<Place[]> {
+    const data = await request<{ places: ServerPlace[] }>('/api/places');
+    return data.places.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category as Place['category'],
+      description: p.description,
+      address: p.address,
+      coords: [p.lat, p.lng],
+      price: p.price,
+      duration: p.duration,
+      rating: p.rating,
+      ratingCount: p.ratingCount,
+      tags: p.tags,
+      imageUrl: p.imageUrl,
+      photos: p.photos,
+      opensAt: p.opensAt,
+      closesAt: p.closesAt,
+      ticketUrl: p.ticketUrl || undefined,
+    }));
   },
 
   // --- Достижения: посещённые места (общие с приложением) ---

@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config.js';
+import { PLACES as SEED_PLACES } from './data/places.js';
 
 // Папка для файла базы — создаём, если её ещё нет.
 const dir = dirname(config.dbPath);
@@ -235,6 +236,79 @@ db.exec(`
   );
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_visits_user ON place_visits(user_id)');
+
+// --- Места ---
+// Раньше список мест был скопирован в двух клиентах (src/data/places.ts и
+// Places.swift) и расходился при правках. Теперь источник правды один —
+// server/src/data/places.js, отсюда он заливается в таблицу, а клиенты
+// забирают её через GET /api/places.
+// Массивы (теги, фотографии) храним строкой JSON: в SQLite нет типа «массив»,
+// а заводить отдельные таблицы ради двух списков смысла нет.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS places (
+    id           INTEGER PRIMARY KEY,      -- НЕ автоинкремент: id зафиксированы
+    name         TEXT    NOT NULL,
+    category     TEXT    NOT NULL,
+    description  TEXT    NOT NULL DEFAULT '',
+    address      TEXT    NOT NULL DEFAULT '',
+    lat          REAL    NOT NULL,
+    lng          REAL    NOT NULL,
+    price        INTEGER NOT NULL DEFAULT 0,
+    duration     INTEGER NOT NULL DEFAULT 60,
+    rating       REAL    NOT NULL DEFAULT 0,
+    rating_count INTEGER NOT NULL DEFAULT 0,
+    tags         TEXT    NOT NULL DEFAULT '[]',
+    image_url    TEXT    NOT NULL DEFAULT '',
+    photos       TEXT    NOT NULL DEFAULT '[]',
+    opens_at     TEXT    NOT NULL DEFAULT '',
+    closes_at    TEXT    NOT NULL DEFAULT '',
+    ticket_url   TEXT    NOT NULL DEFAULT ''
+  );
+`);
+
+// Заливаем список из файла при каждом старте: поправил places.js, перезапустил
+// сервер — изменения на месте. Строки не удаляем, только добавляем и обновляем,
+// чтобы случайная правка файла не снесла место, на которое ссылаются посещения.
+const upsertPlace = db.prepare(`
+  INSERT INTO places (id, name, category, description, address, lat, lng, price,
+                      duration, rating, rating_count, tags, image_url, photos,
+                      opens_at, closes_at, ticket_url)
+  VALUES (@id, @name, @category, @description, @address, @lat, @lng, @price,
+          @duration, @rating, @rating_count, @tags, @image_url, @photos,
+          @opens_at, @closes_at, @ticket_url)
+  ON CONFLICT(id) DO UPDATE SET
+    name = excluded.name, category = excluded.category,
+    description = excluded.description, address = excluded.address,
+    lat = excluded.lat, lng = excluded.lng, price = excluded.price,
+    duration = excluded.duration, rating = excluded.rating,
+    rating_count = excluded.rating_count, tags = excluded.tags,
+    image_url = excluded.image_url, photos = excluded.photos,
+    opens_at = excluded.opens_at, closes_at = excluded.closes_at,
+    ticket_url = excluded.ticket_url
+`);
+db.transaction((list) => {
+  for (const p of list) {
+    upsertPlace.run({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      description: p.description ?? '',
+      address: p.address ?? '',
+      lat: p.lat,
+      lng: p.lng,
+      price: p.price ?? 0,
+      duration: p.duration ?? 60,
+      rating: p.rating ?? 0,
+      rating_count: p.ratingCount ?? 0,
+      tags: JSON.stringify(p.tags ?? []),
+      image_url: p.imageUrl ?? '',
+      photos: JSON.stringify(p.photos ?? []),
+      opens_at: p.opensAt ?? '',
+      closes_at: p.closesAt ?? '',
+      ticket_url: p.ticketUrl ?? '',
+    });
+  }
+})(SEED_PLACES);
 
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

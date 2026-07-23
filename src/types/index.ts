@@ -19,6 +19,12 @@ export interface Place {
   tags: string[];
   ticketUrl?: string;
   imageUrl?: string;
+  // Пришли вместе с переездом мест на сервер: приложение их уже показывает,
+  // сайт пока нет — но данные общие, так что поля есть у обоих.
+  ratingCount?: number;
+  photos?: string[]; // галерея; пустая строка = градиент-заглушка
+  opensAt?: string; // 'ЧЧ:ММ'
+  closesAt?: string; // 'ЧЧ:ММ'; пусто = круглосуточно
 }
 
 export interface RouteStop {
