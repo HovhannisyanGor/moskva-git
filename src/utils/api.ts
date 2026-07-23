@@ -1,3 +1,5 @@
+import type { Visit } from '../types';
+
 // Клиент для общения фронта с бэкендом Localee.
 // Адрес сервера берём из переменной окружения VITE_API_URL.
 // Локально её можно не задавать — по умолчанию http://localhost:4000.
@@ -505,6 +507,32 @@ export const api = {
   },
   async deletePin(id: number) {
     return request<{ ok: boolean }>(`/api/pins/${id}`, { method: 'DELETE', auth: true });
+  },
+
+  // --- Достижения: посещённые места (общие с приложением) ---
+  async visits() {
+    const data = await request<{ visits: Visit[] }>('/api/visits', { auth: true });
+    return data.visits;
+  },
+  async markVisited(placeId: number, note?: string) {
+    const data = await request<{ visit: Visit }>(`/api/visits/${placeId}`, {
+      method: 'PUT',
+      body: { note: note ?? '' },
+      auth: true,
+    });
+    return data.visit;
+  },
+  async unmarkVisited(placeId: number) {
+    return request<{ ok: boolean }>(`/api/visits/${placeId}`, { method: 'DELETE', auth: true });
+  },
+  // Разовый перенос прогресса, накопленного в браузере до появления сервера.
+  async mergeVisits(visits: Visit[]) {
+    const data = await request<{ visits: Visit[] }>('/api/visits/merge', {
+      method: 'POST',
+      body: { visits },
+      auth: true,
+    });
+    return data.visits;
   },
 
   logout() {

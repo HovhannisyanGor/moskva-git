@@ -13,6 +13,7 @@ import { groupsRouter } from './routes/groups.js';
 import { supportRouter } from './routes/support.js';
 import { pinsRouter } from './routes/pins.js';
 import { postsRouter } from './routes/posts.js';
+import { visitsRouter } from './routes/visits.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -49,6 +50,8 @@ app.use('/api/support', supportRouter);
 app.use('/api/pins', pinsRouter);
 // Социальная лента: посты, лайки, комментарии, фотографии
 app.use('/api/posts', postsRouter);
+// Достижения: посещённые места (общие для сайта и приложения)
+app.use('/api/visits', visitsRouter);
 
 // Если запрошенного маршрута нет — отвечаем аккуратным JSON, а не HTML.
 app.use((req, res) => res.status(404).json({ error: 'Маршрут не найден' }));

@@ -219,5 +219,22 @@ db.exec(`
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_pcomments_post ON post_comments(post_id)');
 
+// --- Достижения: посещённые места ---
+// Раньше посещения лежали только у клиента (localStorage на сайте, UserDefaults
+// в приложении), поэтому прогресс на сайте и в телефоне жил отдельно. Теперь
+// хранится на сервере — оба клиента видят одно и то же.
+// Сами значки и уровни НЕ храним: клиенты считают их из списка посещений по
+// одинаковым правилам (badges.ts на сайте, Gamification.swift в приложении).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS place_visits (
+    user_id    INTEGER NOT NULL,
+    place_id   INTEGER NOT NULL,
+    note       TEXT    NOT NULL DEFAULT '',
+    visited_at TEXT    NOT NULL,
+    PRIMARY KEY (user_id, place_id)
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_visits_user ON place_visits(user_id)');
+
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

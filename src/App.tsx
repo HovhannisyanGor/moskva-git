@@ -180,10 +180,14 @@ export default function App() {
       /* ignore */
     }
   }
-  const { visits, unlockedBadges, isVisited, toggleVisit, newBadge, resetAchievements } = useAchievements();
+  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
+
+  // Достижения приходят с сервера, поэтому хуку нужен id вошедшего пользователя:
+  // по нему он подтягивает список и обновляет его при смене аккаунта.
+  const { visits, unlockedBadges, isVisited, toggleVisit, newBadge, resetAchievements } =
+    useAchievements(currentUser?.id);
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
-  const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   // Какой чат сейчас открыт — по нему не показываем всплывашку (ты его и так читаешь).
   const [activeChatUser, setActiveChatUser] = useState<number | null>(null);
