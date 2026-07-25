@@ -105,6 +105,9 @@ if (!msgCols.some((c) => c.name === 'reply_to')) {
 if (!msgCols.some((c) => c.name === 'forwarded_from')) {
   db.exec("ALTER TABLE messages ADD COLUMN forwarded_from TEXT NOT NULL DEFAULT ''"); // имя автора при пересылке
 }
+if (!msgCols.some((c) => c.name === 'image')) {
+  db.exec("ALTER TABLE messages ADD COLUMN image TEXT NOT NULL DEFAULT ''"); // фото в сообщении (data URL, как в постах)
+}
 
 // Дружба между пользователями. Одна строка на пару: кто отправил заявку (requester)
 // и кому (addressee). status: 'pending' (ждёт ответа) или 'accepted' (друзья).
@@ -156,6 +159,11 @@ db.exec(`
   );
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_gmsg_group ON group_messages(group_id)');
+// Миграция: фото в групповых сообщениях (data URL, как в личных чатах и постах).
+const gmsgCols = db.prepare('PRAGMA table_info(group_messages)').all();
+if (!gmsgCols.some((c) => c.name === 'image')) {
+  db.exec("ALTER TABLE group_messages ADD COLUMN image TEXT NOT NULL DEFAULT ''");
+}
 db.exec('CREATE INDEX IF NOT EXISTS idx_gmembers_user ON group_members(user_id)');
 
 // Обращения в поддержку (форма «Написать в поддержку»). Видны админам в админке.

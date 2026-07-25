@@ -41,6 +41,7 @@ function toGroupMessage(m, me) {
     id: m.id,
     fromMe: m.sender_id === me,
     text: m.text,
+    image: m.image || '',
     createdAt: m.created_at,
     edited: !!m.edited,
     forwardedFrom: '',
@@ -168,7 +169,8 @@ groupsRouter.post('/:id/messages', (req, res) => {
   if (!Number.isInteger(gid)) return res.status(400).json({ error: 'Неверный id' });
   if (!isMember(gid, me)) return res.status(403).json({ error: 'Вы не участник группы' });
   const text = String(req.body?.text ?? '').trim();
-  if (!text) return res.status(400).json({ error: 'Пустое сообщение' });
+  const image = String(req.body?.image ?? '');
+  if (!text && !image) return res.status(400).json({ error: 'Пустое сообщение' });
   if (text.length > 4000) return res.status(400).json({ error: 'Сообщение слишком длинное' });
   let replyTo = null;
   const replyId = Number(req.body?.replyTo);
@@ -177,8 +179,8 @@ groupsRouter.post('/:id/messages', (req, res) => {
     if (r) replyTo = replyId;
   }
   const info = db
-    .prepare('INSERT INTO group_messages (group_id, sender_id, text, created_at, reply_to) VALUES (?, ?, ?, ?, ?)')
-    .run(gid, me, text, new Date().toISOString(), replyTo);
+    .prepare('INSERT INTO group_messages (group_id, sender_id, text, image, created_at, reply_to) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(gid, me, text, image, new Date().toISOString(), replyTo);
   db.prepare('UPDATE group_members SET last_read = ? WHERE group_id = ? AND user_id = ?').run(info.lastInsertRowid, gid, me);
   res.status(201).json({ message: toGroupMessage(db.prepare('SELECT * FROM group_messages WHERE id = ?').get(info.lastInsertRowid), me) });
 });

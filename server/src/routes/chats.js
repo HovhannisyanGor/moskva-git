@@ -17,8 +17,11 @@ function toMessageItem(m, me) {
     id: m.id,
     fromMe: m.sender_id === me,
     text: m.text,
+    image: m.image || '',
     createdAt: m.created_at,
     edited: !!m.edited,
+    // read показываем у СВОИХ сообщений как галочки «доставлено/прочитано».
+    read: !!m.read,
     forwardedFrom: m.forwarded_from || '',
     replyTo,
   };
@@ -99,7 +102,9 @@ chatsRouter.post('/:userId/messages', (req, res) => {
   if (!partner) return res.status(404).json({ error: 'Пользователь не найден' });
 
   const text = String(req.body?.text ?? '').trim();
-  if (!text) return res.status(400).json({ error: 'Пустое сообщение' });
+  const image = String(req.body?.image ?? '');
+  // Сообщение = текст ИЛИ фото (или и то, и другое).
+  if (!text && !image) return res.status(400).json({ error: 'Пустое сообщение' });
   if (text.length > 4000) return res.status(400).json({ error: 'Сообщение слишком длинное' });
 
   // Ответ: принимаем id сообщения, только если оно из этого же диалога.
@@ -115,9 +120,9 @@ chatsRouter.post('/:userId/messages', (req, res) => {
 
   const info = db
     .prepare(
-      'INSERT INTO messages (sender_id, recipient_id, text, read, created_at, reply_to, forwarded_from) VALUES (?, ?, ?, 0, ?, ?, ?)',
+      'INSERT INTO messages (sender_id, recipient_id, text, image, read, created_at, reply_to, forwarded_from) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
     )
-    .run(me, uid, text, new Date().toISOString(), replyTo, forwardedFrom);
+    .run(me, uid, text, image, new Date().toISOString(), replyTo, forwardedFrom);
 
   const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json({ message: toMessageItem(m, me) });
