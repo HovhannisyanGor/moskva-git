@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { toChatUser } from '../users.js';
+import { reactionsFor, setReaction } from '../reactions.js';
 
 export const groupsRouter = Router();
 groupsRouter.use(requireAuth);
@@ -46,6 +47,7 @@ function toGroupMessage(m, me) {
     edited: !!m.edited,
     forwardedFrom: '',
     replyTo,
+    reactions: reactionsFor('group', m.id, me),
     sender: s ? { id: s.id, name: s.name, color: s.color, letter: s.letter, avatar: s.avatar || '' } : null,
   };
 }
@@ -147,6 +149,19 @@ groupsRouter.delete('/messages/:id', (req, res) => {
   db.prepare('UPDATE group_messages SET reply_to = NULL WHERE reply_to = ?').run(id);
   db.prepare('DELETE FROM group_messages WHERE id = ?').run(id);
   res.json({ ok: true, deleted: id });
+});
+
+// PUT /api/groups/messages/:id/reaction — реакция на сообщение группы (участники).
+groupsRouter.put('/messages/:id/reaction', (req, res) => {
+  const me = req.userId;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Неверный id' });
+  const m = db.prepare('SELECT group_id FROM group_messages WHERE id = ?').get(id);
+  if (!m) return res.status(404).json({ error: 'Сообщение не найдено' });
+  if (!isMember(m.group_id, me)) return res.status(403).json({ error: 'Вы не участник группы' });
+  const emoji = String(req.body?.emoji ?? '');
+  if (!setReaction('group', id, me, emoji)) return res.status(400).json({ error: 'Недопустимая реакция' });
+  res.json({ reactions: reactionsFor('group', id, me) });
 });
 
 // GET /api/groups/:id/messages — переписка группы (только участники); помечаем прочитанным.

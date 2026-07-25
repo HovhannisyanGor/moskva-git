@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { toChatUser } from '../users.js';
+import { reactionsFor, setReaction } from '../reactions.js';
 
 export const chatsRouter = Router();
 chatsRouter.use(requireAuth); // все маршруты чатов требуют входа
@@ -24,6 +25,7 @@ function toMessageItem(m, me) {
     read: !!m.read,
     forwardedFrom: m.forwarded_from || '',
     replyTo,
+    reactions: reactionsFor('dm', m.id, me),
   };
 }
 
@@ -161,4 +163,19 @@ chatsRouter.delete('/messages/:id', (req, res) => {
   db.prepare('UPDATE messages SET reply_to = NULL WHERE reply_to = ?').run(id);
   db.prepare('DELETE FROM messages WHERE id = ?').run(id);
   res.json({ ok: true, deleted: id });
+});
+
+// PUT /api/chats/messages/:id/reaction — поставить/снять реакцию (эмодзи).
+// Реагировать может только участник этого диалога.
+chatsRouter.put('/messages/:id/reaction', (req, res) => {
+  const me = req.userId;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Неверный id' });
+  const m = db.prepare('SELECT sender_id, recipient_id FROM messages WHERE id = ?').get(id);
+  if (!m) return res.status(404).json({ error: 'Сообщение не найдено' });
+  if (m.sender_id !== me && m.recipient_id !== me)
+    return res.status(403).json({ error: 'Чужой диалог' });
+  const emoji = String(req.body?.emoji ?? '');
+  if (!setReaction('dm', id, me, emoji)) return res.status(400).json({ error: 'Недопустимая реакция' });
+  res.json({ reactions: reactionsFor('dm', id, me) });
 });

@@ -245,6 +245,20 @@ db.exec(`
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_visits_user ON place_visits(user_id)');
 
+// --- Реакции на сообщения (эмодзи под сообщением, как в Telegram) ---
+// Одна таблица на личные (scope='dm') и групповые (scope='group') сообщения.
+// Одна реакция на человека на сообщение (PRIMARY KEY) — повторная заменяет эмодзи.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS message_reactions (
+    scope      TEXT    NOT NULL,
+    message_id INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    emoji      TEXT    NOT NULL,
+    PRIMARY KEY (scope, message_id, user_id)
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_reactions_msg ON message_reactions(scope, message_id)');
+
 // --- Места ---
 // Раньше список мест был скопирован в двух клиентах (src/data/places.ts и
 // Places.swift) и расходился при правках. Теперь источник правды один —
