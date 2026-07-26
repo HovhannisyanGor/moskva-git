@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth, requireAdmin } from '../auth.js';
+import { limitSupport } from '../ratelimit.js';
 
 export const supportRouter = Router();
 
 // POST /api/support — пользователь отправляет обращение в поддержку.
-supportRouter.post('/', requireAuth, (req, res) => {
+supportRouter.post('/', requireAuth, limitSupport, (req, res) => {
   const text = String(req.body?.text ?? '').trim();
   if (!text) return res.status(400).json({ error: 'Напишите сообщение' });
   if (text.length > 4000) return res.status(400).json({ error: 'Сообщение слишком длинное' });

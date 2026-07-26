@@ -8,26 +8,38 @@
 
 const MAX_ATTACHMENTS = 10;
 const MAX_ONE = 8 * 1024 * 1024; // ~8 МБ на одно вложение (base64)
+// Фото — только эти форматы (чтобы под видом «картинки» не залили что попало).
+const IMAGE_RE = /^data:image\/(png|jpe?g|webp|gif);base64,/i;
+// Файл — любой data:...;base64, но не «активные» типы (html/js/svg — вектор XSS).
+const FILE_RE = /^data:([\w.+-]+\/[\w.+-]+);base64,/i;
+const BLOCKED_MIME = /(text\/html|javascript|image\/svg)/i;
 
 // Разобрать то, что прислал клиент. legacyImage — старое одиночное поле image
-// (если клиент шлёт по-старому). Возвращает нормализованный массив.
+// (если клиент шлёт по-старому). Возвращает нормализованный, проверенный массив.
 export function parseIncomingAttachments(raw, legacyImage = '') {
   const out = [];
   if (Array.isArray(raw)) {
     for (const a of raw.slice(0, MAX_ATTACHMENTS)) {
       const data = typeof a?.data === 'string' ? a.data : '';
-      if (!data.startsWith('data:') || data.length > MAX_ONE) continue;
+      if (data.length > MAX_ONE) continue;
       const type = a?.type === 'file' ? 'file' : 'image';
-      const item = { type, data };
-      if (type === 'file') {
-        item.name = String(a?.name || 'файл').slice(0, 120);
-        item.mime = String(a?.mime || '').slice(0, 100);
+      if (type === 'image') {
+        if (!IMAGE_RE.test(data)) continue;      // не картинка разрешённого формата — мимо
+        out.push({ type: 'image', data });
+      } else {
+        const m = FILE_RE.exec(data);
+        if (!m || BLOCKED_MIME.test(m[1])) continue; // не файл / опасный тип — мимо
+        out.push({
+          type: 'file',
+          data,
+          name: String(a?.name || 'файл').slice(0, 120),
+          mime: m[1].slice(0, 100),
+        });
       }
-      out.push(item);
     }
   }
   // Старый клиент прислал одно фото полем image — заворачиваем во вложение.
-  if (out.length === 0 && typeof legacyImage === 'string' && legacyImage.startsWith('data:')) {
+  if (out.length === 0 && typeof legacyImage === 'string' && IMAGE_RE.test(legacyImage)) {
     out.push({ type: 'image', data: legacyImage });
   }
   return out;

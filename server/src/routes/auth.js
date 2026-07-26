@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db.js';
+import { limitRegister } from '../ratelimit.js';
 import { hashPassword, verifyPassword, signToken, requireAuth } from '../auth.js';
 import { toPublicUser, syncAdminRole } from '../users.js';
 
@@ -67,7 +68,7 @@ function clearLoginAttempts(req) {
 }
 
 // POST /api/auth/register — регистрация нового пользователя.
-authRouter.post('/register', (req, res) => {
+authRouter.post('/register', limitRegister, (req, res) => {
   // Приводим к строке и убираем пробелы по краям — чтобы кривой ввод не ронял сервер.
   const name = String(req.body?.name ?? '').trim();
   const email = String(req.body?.email ?? '').trim().toLowerCase();

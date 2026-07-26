@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { limitPost, limitComment } from '../ratelimit.js';
 import { toChatUser } from '../users.js';
 import { parseIncomingAttachments, serializeAttachments, firstImage, readAttachments } from '../attachments.js';
 
@@ -87,7 +88,7 @@ postsRouter.get('/photos/:userId', (req, res) => {
 });
 
 // POST /api/posts — создать пост (текст и/или картинка).
-postsRouter.post('/', (req, res) => {
+postsRouter.post('/', limitPost, (req, res) => {
   const me = req.userId;
   const text = String(req.body?.text ?? '').trim();
   // Вложения: новый формат (массив) + обратная совместимость со старым image.
@@ -128,7 +129,7 @@ postsRouter.get('/:id/comments', (req, res) => {
 });
 
 // POST /api/posts/:id/comments — добавить комментарий.
-postsRouter.post('/:id/comments', (req, res) => {
+postsRouter.post('/:id/comments', limitComment, (req, res) => {
   const me = req.userId;
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Неверный id', code: 'bad_id' });

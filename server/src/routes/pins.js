@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { limitPin } from '../ratelimit.js';
 
 export const pinsRouter = Router();
 pinsRouter.use(requireAuth);
@@ -30,7 +31,7 @@ pinsRouter.get('/', (req, res) => {
 });
 
 // POST /api/pins — поставить метку.
-pinsRouter.post('/', (req, res) => {
+pinsRouter.post('/', limitPin, (req, res) => {
   const kind = String(req.body?.kind ?? '');
   if (!KINDS.includes(kind)) return res.status(400).json({ error: 'Неверный тип метки' });
   const lat = Number(req.body?.lat);

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { limitMessage } from '../ratelimit.js';
 import { toChatUser } from '../users.js';
 import { reactionsFor, setReaction } from '../reactions.js';
 import { parseIncomingAttachments, serializeAttachments, firstImage, readAttachments } from '../attachments.js';
@@ -96,7 +97,7 @@ chatsRouter.get('/:userId/messages', (req, res) => {
 });
 
 // POST /api/chats/:userId/messages — отправить сообщение собеседнику.
-chatsRouter.post('/:userId/messages', (req, res) => {
+chatsRouter.post('/:userId/messages', limitMessage, (req, res) => {
   const me = req.userId;
   const uid = Number(req.params.userId);
   if (!Number.isInteger(uid)) return res.status(400).json({ error: 'Неверный id' });

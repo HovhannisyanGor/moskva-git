@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { randomBytes } from 'node:crypto';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { limitMessage } from '../ratelimit.js';
 import { toChatUser } from '../users.js';
 import { reactionsFor, setReaction } from '../reactions.js';
 import { parseIncomingAttachments, serializeAttachments, firstImage, readAttachments } from '../attachments.js';
@@ -180,7 +181,7 @@ groupsRouter.get('/:id/messages', (req, res) => {
 });
 
 // POST /api/groups/:id/messages — отправить сообщение в группу.
-groupsRouter.post('/:id/messages', (req, res) => {
+groupsRouter.post('/:id/messages', limitMessage, (req, res) => {
   const me = req.userId;
   const gid = Number(req.params.id);
   if (!Number.isInteger(gid)) return res.status(400).json({ error: 'Неверный id' });
