@@ -108,6 +108,10 @@ if (!msgCols.some((c) => c.name === 'forwarded_from')) {
 if (!msgCols.some((c) => c.name === 'image')) {
   db.exec("ALTER TABLE messages ADD COLUMN image TEXT NOT NULL DEFAULT ''"); // фото в сообщении (data URL, как в постах)
 }
+// Вложения (несколько фото + файлы) — JSON-массив. image остаётся для совместимости.
+if (!msgCols.some((c) => c.name === 'attachments')) {
+  db.exec("ALTER TABLE messages ADD COLUMN attachments TEXT NOT NULL DEFAULT ''");
+}
 
 // Дружба между пользователями. Одна строка на пару: кто отправил заявку (requester)
 // и кому (addressee). status: 'pending' (ждёт ответа) или 'accepted' (друзья).
@@ -164,6 +168,9 @@ const gmsgCols = db.prepare('PRAGMA table_info(group_messages)').all();
 if (!gmsgCols.some((c) => c.name === 'image')) {
   db.exec("ALTER TABLE group_messages ADD COLUMN image TEXT NOT NULL DEFAULT ''");
 }
+if (!gmsgCols.some((c) => c.name === 'attachments')) {
+  db.exec("ALTER TABLE group_messages ADD COLUMN attachments TEXT NOT NULL DEFAULT ''");
+}
 db.exec('CREATE INDEX IF NOT EXISTS idx_gmembers_user ON group_members(user_id)');
 
 // Обращения в поддержку (форма «Написать в поддержку»). Видны админам в админке.
@@ -204,6 +211,10 @@ db.exec(`
   );
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_posts_user ON posts(user_id)');
+// Вложения поста (несколько фото + файлы) — JSON. image остаётся для совместимости.
+if (!db.prepare('PRAGMA table_info(posts)').all().some((c) => c.name === 'attachments')) {
+  db.exec("ALTER TABLE posts ADD COLUMN attachments TEXT NOT NULL DEFAULT ''");
+}
 db.exec('CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at)');
 
 // Лайки: одна строка на пару (пост, пользователь) — нельзя лайкнуть дважды.

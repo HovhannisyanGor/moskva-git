@@ -3,6 +3,7 @@ import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { toChatUser } from '../users.js';
 import { reactionsFor, setReaction } from '../reactions.js';
+import { parseIncomingAttachments, serializeAttachments, firstImage, readAttachments } from '../attachments.js';
 
 export const chatsRouter = Router();
 chatsRouter.use(requireAuth); // все маршруты чатов требуют входа
@@ -19,6 +20,7 @@ function toMessageItem(m, me) {
     fromMe: m.sender_id === me,
     text: m.text,
     image: m.image || '',
+    attachments: readAttachments(m),
     createdAt: m.created_at,
     edited: !!m.edited,
     // read показываем у СВОИХ сообщений как галочки «доставлено/прочитано».
@@ -104,9 +106,10 @@ chatsRouter.post('/:userId/messages', (req, res) => {
   if (!partner) return res.status(404).json({ error: 'Пользователь не найден' });
 
   const text = String(req.body?.text ?? '').trim();
-  const image = String(req.body?.image ?? '');
-  // Сообщение = текст ИЛИ фото (или и то, и другое).
-  if (!text && !image) return res.status(400).json({ error: 'Пустое сообщение' });
+  const attachments = parseIncomingAttachments(req.body?.attachments, req.body?.image);
+  const image = firstImage(attachments);
+  // Сообщение = текст ИЛИ вложения (или и то, и другое).
+  if (!text && attachments.length === 0) return res.status(400).json({ error: 'Пустое сообщение' });
   if (text.length > 4000) return res.status(400).json({ error: 'Сообщение слишком длинное' });
 
   // Ответ: принимаем id сообщения, только если оно из этого же диалога.
@@ -122,9 +125,9 @@ chatsRouter.post('/:userId/messages', (req, res) => {
 
   const info = db
     .prepare(
-      'INSERT INTO messages (sender_id, recipient_id, text, image, read, created_at, reply_to, forwarded_from) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
+      'INSERT INTO messages (sender_id, recipient_id, text, image, attachments, read, created_at, reply_to, forwarded_from) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)',
     )
-    .run(me, uid, text, image, new Date().toISOString(), replyTo, forwardedFrom);
+    .run(me, uid, text, image, serializeAttachments(attachments), new Date().toISOString(), replyTo, forwardedFrom);
 
   const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json({ message: toMessageItem(m, me) });

@@ -4,6 +4,7 @@ import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { toChatUser } from '../users.js';
 import { reactionsFor, setReaction } from '../reactions.js';
+import { parseIncomingAttachments, serializeAttachments, firstImage, readAttachments } from '../attachments.js';
 
 export const groupsRouter = Router();
 groupsRouter.use(requireAuth);
@@ -43,6 +44,7 @@ function toGroupMessage(m, me) {
     fromMe: m.sender_id === me,
     text: m.text,
     image: m.image || '',
+    attachments: readAttachments(m),
     createdAt: m.created_at,
     edited: !!m.edited,
     forwardedFrom: '',
@@ -184,8 +186,9 @@ groupsRouter.post('/:id/messages', (req, res) => {
   if (!Number.isInteger(gid)) return res.status(400).json({ error: 'Неверный id' });
   if (!isMember(gid, me)) return res.status(403).json({ error: 'Вы не участник группы' });
   const text = String(req.body?.text ?? '').trim();
-  const image = String(req.body?.image ?? '');
-  if (!text && !image) return res.status(400).json({ error: 'Пустое сообщение' });
+  const attachments = parseIncomingAttachments(req.body?.attachments, req.body?.image);
+  const image = firstImage(attachments);
+  if (!text && attachments.length === 0) return res.status(400).json({ error: 'Пустое сообщение' });
   if (text.length > 4000) return res.status(400).json({ error: 'Сообщение слишком длинное' });
   let replyTo = null;
   const replyId = Number(req.body?.replyTo);
@@ -194,8 +197,8 @@ groupsRouter.post('/:id/messages', (req, res) => {
     if (r) replyTo = replyId;
   }
   const info = db
-    .prepare('INSERT INTO group_messages (group_id, sender_id, text, image, created_at, reply_to) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(gid, me, text, image, new Date().toISOString(), replyTo);
+    .prepare('INSERT INTO group_messages (group_id, sender_id, text, image, attachments, created_at, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(gid, me, text, image, serializeAttachments(attachments), new Date().toISOString(), replyTo);
   db.prepare('UPDATE group_members SET last_read = ? WHERE group_id = ? AND user_id = ?').run(info.lastInsertRowid, gid, me);
   res.status(201).json({ message: toGroupMessage(db.prepare('SELECT * FROM group_messages WHERE id = ?').get(info.lastInsertRowid), me) });
 });

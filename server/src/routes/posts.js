@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { toChatUser } from '../users.js';
+import { parseIncomingAttachments, serializeAttachments, firstImage, readAttachments } from '../attachments.js';
 
 export const postsRouter = Router();
 postsRouter.use(requireAuth); // вся лента доступна только вошедшим
@@ -29,7 +30,8 @@ function toPostItem(p, me) {
     id: p.id,
     author: author(p.user_id),
     text: p.text,
-    image: p.image || '',
+    image: p.image || '',            // первое фото — для старых клиентов/сайта
+    attachments: readAttachments(p), // все вложения (фото + файлы)
     createdAt: p.created_at,
     likeCount,
     liked,
@@ -88,13 +90,15 @@ postsRouter.get('/photos/:userId', (req, res) => {
 postsRouter.post('/', (req, res) => {
   const me = req.userId;
   const text = String(req.body?.text ?? '').trim();
-  const image = typeof req.body?.image === 'string' ? req.body.image : '';
-  if (!text && !image) return res.status(400).json({ error: 'Пост пустой', code: 'post_empty' });
+  // Вложения: новый формат (массив) + обратная совместимость со старым image.
+  const attachments = parseIncomingAttachments(req.body?.attachments, req.body?.image);
+  const image = firstImage(attachments); // первое фото — в старую колонку
+  if (!text && attachments.length === 0) return res.status(400).json({ error: 'Пост пустой', code: 'post_empty' });
   if (text.length > MAX_TEXT) return res.status(400).json({ error: 'Текст слишком длинный', code: 'post_long' });
-  if (!validImage(image)) return res.status(400).json({ error: 'Картинка не подходит (формат или размер)', code: 'image_bad' });
+  if (image && !validImage(image)) return res.status(400).json({ error: 'Картинка не подходит (формат или размер)', code: 'image_bad' });
   const info = db
-    .prepare('INSERT INTO posts (user_id, text, image, created_at) VALUES (?, ?, ?, ?)')
-    .run(me, text, image, new Date().toISOString());
+    .prepare('INSERT INTO posts (user_id, text, image, attachments, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(me, text, image, serializeAttachments(attachments), new Date().toISOString());
   const p = db.prepare('SELECT * FROM posts WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json({ post: toPostItem(p, me) });
 });
