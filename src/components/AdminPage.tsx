@@ -1,5 +1,34 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type AdminUser, type AdminStats, type SupportMessage } from '../utils/api';
+import { api, type AdminUser, type AdminStats, type SupportMessage, type AdminReport } from '../utils/api';
+import BanDialog from './BanDialog';
+
+// Подписи причин жалоб — те же коды, что шлют сайт и приложение.
+const REASON_LABELS: Record<string, string> = {
+  spam: 'Спам или реклама',
+  abuse: 'Оскорбления или травля',
+  adult: 'Материалы 18+',
+  violence: 'Насилие или угрозы',
+  fake: 'Обман или фейк',
+  other: 'Другое',
+};
+
+// Названия того, на что пожаловались.
+const TARGET_LABELS: Record<string, string> = {
+  post: 'Пост',
+  comment: 'Комментарий',
+  message: 'Личное сообщение',
+  group_message: 'Сообщение в группе',
+  pin: 'Метка на карте',
+  user: 'Профиль',
+};
+
+// Человеческое описание блокировки для строки пользователя.
+function banLabel(ban: AdminUser['ban']): string {
+  if (!ban?.banned) return '';
+  if (ban.forever) return 'заблокирован навсегда';
+  const d = ban.until ? new Date(ban.until) : null;
+  return d ? `заблокирован до ${d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}` : 'заблокирован';
+}
 
 interface AdminPageProps {
   meId: number; // id текущего администратора — чтобы не дать удалить/разжаловать самого себя
@@ -33,9 +62,23 @@ export default function AdminPage({ meId }: AdminPageProps) {
   const [support, setSupport] = useState<SupportMessage[]>([]);
   const [showSupport, setShowSupport] = useState(false);
 
+  // Модерация
+  const [reports, setReports] = useState<AdminReport[]>([]);
+  const [showReports, setShowReports] = useState(true); // жалобы важнее — открыты сразу
+  const [reportFilter, setReportFilter] = useState<'open' | 'all'>('open');
+  const [banTarget, setBanTarget] = useState<{ id: number; handle: string } | null>(null);
+
   useEffect(() => {
     api.adminSupportList().then(setSupport).catch(() => {});
   }, []);
+
+  const loadReports = useCallback(() => {
+    api.adminReports(reportFilter).then(setReports).catch(() => {});
+  }, [reportFilter]);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   async function resolveSupport(id: number) {
     try {
@@ -86,6 +129,40 @@ export default function AdminPage({ meId }: AdminPageProps) {
     }
   }
 
+  // Решение по жалобе. deleteContent удаляет саму запись, на которую пожаловались.
+  async function decide(r: AdminReport, action: 'resolve' | 'reject', deleteContent = false) {
+    setBusyId(r.id);
+    setError('');
+    try {
+      await api.adminResolveReport(r.id, action, deleteContent);
+      loadReports();
+      refreshStats();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось закрыть жалобу');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Пользователя обновляем сразу в обоих списках: он может быть виден и там, и там.
+  function applyUser(u: AdminUser) {
+    setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+    loadReports();
+    refreshStats();
+  }
+
+  async function unban(u: { id: number; handle: string }) {
+    setBusyId(u.id);
+    setError('');
+    try {
+      applyUser(await api.adminUnban(u.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось снять блокировку');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function remove(u: AdminUser) {
     const ok = window.confirm(
       `Удалить пользователя @${u.handle}?\nЕго переписка тоже будет удалена. Действие необратимо.`,
@@ -126,7 +203,136 @@ export default function AdminPage({ meId }: AdminPageProps) {
             <b>{stats ? stats.messages : '—'}</b>
             <span>Сообщений</span>
           </div>
+          <div className={`adm-stat${stats && stats.openReports > 0 ? ' adm-stat--alert' : ''}`}>
+            <b>{stats ? stats.openReports : '—'}</b>
+            <span>Жалоб</span>
+          </div>
+          <div className="adm-stat">
+            <b>{stats ? stats.banned : '—'}</b>
+            <span>Заблокировано</span>
+          </div>
         </div>
+
+        {/* Жалобы на контент */}
+        <button type="button" className="adm-support-toggle" onClick={() => setShowReports((v) => !v)}>
+          <span>⚑ Жалобы</span>
+          <span className="adm-support-count">
+            {reports.filter((r) => r.status === 'open').length} на разборе
+          </span>
+          <span className="adm-support-arrow">{showReports ? '▴' : '▾'}</span>
+        </button>
+        {showReports && (
+          <div className="adm-support-list">
+            <div className="adm-rep-filter">
+              <button
+                type="button"
+                className={`adm-rep-tab${reportFilter === 'open' ? ' adm-rep-tab--on' : ''}`}
+                onClick={() => setReportFilter('open')}
+              >
+                На разборе
+              </button>
+              <button
+                type="button"
+                className={`adm-rep-tab${reportFilter === 'all' ? ' adm-rep-tab--on' : ''}`}
+                onClick={() => setReportFilter('all')}
+              >
+                Все
+              </button>
+            </div>
+
+            {reports.length === 0 && <div className="adm-empty">Жалоб нет</div>}
+
+            {reports.map((r) => {
+              const open = r.status === 'open';
+              const busy = busyId === r.id;
+              return (
+                <div key={r.id} className={`adm-rep${open ? '' : ' adm-support-item--done'}`}>
+                  <div className="adm-rep-top">
+                    <span className="adm-rep-reason">{REASON_LABELS[r.reason] || r.reason}</span>
+                    <span className="adm-rep-kind">{TARGET_LABELS[r.targetType] || r.targetType}</span>
+                    {r.reportsOnTarget > 1 && (
+                      <span className="adm-rep-many">жалоб: {r.reportsOnTarget}</span>
+                    )}
+                    <span className="adm-support-date">{formatDate(r.createdAt)}</span>
+                  </div>
+
+                  {/* Копия текста на момент жалобы: оригинал автор мог уже удалить. */}
+                  <div className="adm-rep-snapshot">{r.snapshot || '(без текста)'}</div>
+                  {r.note && <div className="adm-rep-note">Жалобщик: {r.note}</div>}
+
+                  <div className="adm-rep-who">
+                    <span>
+                      на <b>@{r.target.handle}</b>
+                      {r.target.ban.banned && (
+                        <span className="adm-badge adm-badge--ban">{banLabel(r.target.ban)}</span>
+                      )}
+                    </span>
+                    <span className="adm-rep-from">от @{r.reporter.handle}</span>
+                  </div>
+
+                  {open ? (
+                    <div className="adm-rep-actions">
+                      {/* Жалоба на профиль: удалять тут нечего — для человека есть
+                          блокировка, а удаление аккаунта живёт в списке пользователей. */}
+                      {r.targetType !== 'user' && (
+                        <button
+                          type="button"
+                          className="adm-act adm-act--danger"
+                          disabled={busy}
+                          onClick={() => decide(r, 'resolve', true)}
+                          title="Удалить запись и закрыть жалобу"
+                        >
+                          Удалить запись
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="adm-act"
+                        disabled={busy}
+                        onClick={() => decide(r, 'resolve')}
+                        title="Закрыть жалобу, запись оставить"
+                      >
+                        Закрыть
+                      </button>
+                      <button
+                        type="button"
+                        className="adm-act"
+                        disabled={busy}
+                        onClick={() => decide(r, 'reject')}
+                        title="Жалоба необоснованна"
+                      >
+                        Отклонить
+                      </button>
+                      {r.target.ban.banned ? (
+                        <button
+                          type="button"
+                          className="adm-act"
+                          disabled={busy}
+                          onClick={() => unban(r.target)}
+                        >
+                          Разблокировать автора
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="adm-act adm-act--danger"
+                          disabled={busy}
+                          onClick={() => setBanTarget({ id: r.target.id, handle: r.target.handle })}
+                        >
+                          Заблокировать автора
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="adm-rep-status">
+                      {r.status === 'resolved' ? 'жалоба принята' : 'жалоба отклонена'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Обращения в поддержку */}
         <button type="button" className="adm-support-toggle" onClick={() => setShowSupport((v) => !v)}>
@@ -197,6 +403,11 @@ export default function AdminPage({ meId }: AdminPageProps) {
                         {u.name}
                         {isAdmin && <span className="adm-badge">admin</span>}
                         {isMe && <span className="adm-badge adm-badge--me">вы</span>}
+                        {u.ban?.banned && (
+                          <span className="adm-badge adm-badge--ban" title={u.ban.reason || ''}>
+                            {banLabel(u.ban)}
+                          </span>
+                        )}
                       </span>
                       <span className="adm-row-sub">
                         @{u.handle} · {u.email}
@@ -223,6 +434,33 @@ export default function AdminPage({ meId }: AdminPageProps) {
                       >
                         {isAdmin ? 'Снять админа' : 'Сделать админом'}
                       </button>
+                      {u.ban?.banned ? (
+                        <button
+                          type="button"
+                          className="adm-act"
+                          disabled={busy}
+                          title={u.ban.reason ? `Причина: ${u.ban.reason}` : 'Снять блокировку'}
+                          onClick={() => unban(u)}
+                        >
+                          Разблокировать
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="adm-act"
+                          disabled={busy || isMe || u.protected}
+                          title={
+                            u.protected
+                              ? 'Задан в настройках сервера (ADMIN_EMAILS)'
+                              : isMe
+                                ? 'Нельзя заблокировать самого себя'
+                                : 'Заблокировать: не сможет ни войти, ни писать'
+                          }
+                          onClick={() => setBanTarget({ id: u.id, handle: u.handle })}
+                        >
+                          Заблокировать
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="adm-act adm-act--danger"
@@ -246,6 +484,15 @@ export default function AdminPage({ meId }: AdminPageProps) {
           </>
         )}
       </div>
+
+      {banTarget && (
+        <BanDialog
+          userId={banTarget.id}
+          handle={banTarget.handle}
+          onClose={() => setBanTarget(null)}
+          onBanned={applyUser}
+        />
+      )}
     </div>
   );
 }

@@ -73,6 +73,18 @@ if (!userCols.some((c) => c.name === 'cover')) {
   db.exec("ALTER TABLE users ADD COLUMN cover TEXT NOT NULL DEFAULT ''");
 }
 
+// Блокировка (бан). Одна колонка описывает всё состояние:
+//   ''        — не заблокирован;
+//   'forever' — навсегда;
+//   ISO-дата  — заблокирован до этого момента (временный бан снимется сам).
+if (!userCols.some((c) => c.name === 'banned_until')) {
+  db.exec("ALTER TABLE users ADD COLUMN banned_until TEXT NOT NULL DEFAULT ''");
+}
+// Причина — её видит и сам заблокированный, чтобы бан не выглядел поломкой.
+if (!userCols.some((c) => c.name === 'ban_reason')) {
+  db.exec("ALTER TABLE users ADD COLUMN ban_reason TEXT NOT NULL DEFAULT ''");
+}
+
 // Бутстрап администраторов: всех, чьи email перечислены в ADMIN_EMAILS, повышаем
 // до admin при старте. Безопасно гонять каждый раз. Роли, выданные внутри самой
 // админки, не трогаем — понижаем только если так решит администратор вручную.
@@ -342,6 +354,38 @@ db.transaction((list) => {
     });
   }
 })(SEED_PLACES);
+
+// --- Модерация: жалобы на контент ---
+// target_type + target_id указывают на конкретную запись (пост, комментарий,
+// сообщение, метка на карте или сам пользователь).
+//
+// snapshot — копия текста НА МОМЕНТ жалобы. Она обязательна: автор может
+// удалить или отредактировать запись раньше, чем модератор её посмотрит, и без
+// копии жалоба превратилась бы в пустую строку без всякого смысла.
+//
+// target_user_id — автор контента. Хранится отдельно (а не ищется по ссылке),
+// чтобы решение по жалобе можно было принять даже после удаления самой записи.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reports (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_id    INTEGER NOT NULL,             -- кто пожаловался
+    target_type    TEXT    NOT NULL,             -- post | comment | message | group_message | pin | user
+    target_id      INTEGER NOT NULL,
+    target_user_id INTEGER NOT NULL,             -- на кого жалоба (автор контента)
+    reason         TEXT    NOT NULL,             -- код причины (spam, abuse, ...)
+    note           TEXT    NOT NULL DEFAULT '',  -- комментарий жалобщика
+    snapshot       TEXT    NOT NULL DEFAULT '',  -- копия текста на момент жалобы
+    status         TEXT    NOT NULL DEFAULT 'open', -- open | resolved | rejected
+    created_at     TEXT    NOT NULL,
+    resolved_at    TEXT    NOT NULL DEFAULT '',
+    resolved_by    INTEGER
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, id)');
+// Один человек — одна жалоба на одну запись: повторные нажатия не раздувают список.
+db.exec(
+  'CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_once ON reports(reporter_id, target_type, target_id)',
+);
 
 // На будущее: когда добавим вход через Yandex/VK/SMS, заведём отдельную таблицу
 // auth_identities (user_id, provider, identifier) и таблицу users менять не придётся.

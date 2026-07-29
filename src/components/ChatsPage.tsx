@@ -9,8 +9,10 @@ import {
   type GroupInfo,
   type GroupMessageItem,
 } from '../utils/api';
+import type { ReportTarget } from '../utils/api';
 import { addFiles, MAX_ATTACHMENTS } from '../utils/attachments';
 import { AttachmentsView, AttachmentPreviewRow, ClipIcon, PhotoIcon } from './Attachments';
+import ReportDialog from './ReportDialog';
 import { useI18n } from '../i18n';
 import GroupSettings from './GroupSettings';
 import CreateGroup from './CreateGroup';
@@ -100,6 +102,7 @@ export default function ChatsPage({
   const [replyTo, setReplyTo] = useState<AnyMsg | null>(null); // на что отвечаем
   const [editing, setEditing] = useState<AnyMsg | null>(null); // что редактируем
   const [forwarding, setForwarding] = useState<AnyMsg | null>(null); // что пересылаем
+  const [reporting, setReporting] = useState<{ type: ReportTarget; id: number } | null>(null);
   const [toast, setToast] = useState('');
 
   // Группы
@@ -782,6 +785,19 @@ export default function ChatsPage({
                 <span className="msg-menu-ic">🗑</span> {t('chats.delete')}
               </button>
             )}
+            {/* На своё сообщение жаловаться незачем — сервер такую жалобу и не примет. */}
+            {!menuMsg.fromMe && (
+              <button
+                type="button"
+                className="msg-menu-item msg-menu-item--danger"
+                onClick={() => {
+                  setReporting({ type: isGroup ? 'group_message' : 'message', id: menuMsg.id });
+                  setMenuMsg(null);
+                }}
+              >
+                <span className="msg-menu-ic">⚑</span> {t('report.action')}
+              </button>
+            )}
             <button type="button" className="msg-menu-cancel" onClick={() => setMenuMsg(null)}>
               {t('common.cancel')}
             </button>
@@ -838,6 +854,14 @@ export default function ChatsPage({
             loadChats();
             openGroup(g);
           }}
+        />
+      )}
+
+      {reporting && (
+        <ReportDialog
+          targetType={reporting.type}
+          targetId={reporting.id}
+          onClose={() => setReporting(null)}
         />
       )}
 

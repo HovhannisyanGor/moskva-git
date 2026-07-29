@@ -27,7 +27,7 @@ import { useChatNotifications } from './hooks/useChatNotifications';
 import { useI18n } from './i18n';
 import type { Place, Route, View } from './types';
 import { PLACES } from './data/places';
-import { api, getToken, clearToken, type ApiUser, type ChatUser, type MapPin, type PinKind } from './utils/api';
+import { api, ApiError, getToken, clearToken, type ApiUser, type ChatUser, type MapPin, type PinKind } from './utils/api';
 import { buildDisplayUser, displayBadges, recentPlaces } from './utils/profile';
 import './App.css';
 
@@ -194,6 +194,8 @@ export default function App() {
   // Состояние «гостя» (пока не вошёл): сначала лендинг, потом экран входа.
   const [authView, setAuthView] = useState<'landing' | 'auth'>('landing');
   const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
+  // Причина блокировки, если аккаунт забанили во время сессии — показываем на входе.
+  const [banNotice, setBanNotice] = useState('');
   // Какой диалог открыть в чатах (например, по кнопке «Написать» у друга).
   const [chatWith, setChatWith] = useState<ChatUser | null>(null);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
@@ -210,8 +212,11 @@ export default function App() {
       try {
         const u = await api.me();
         if (alive) setCurrentUser(u);
-      } catch {
-        clearToken(); // токен протух — выходим
+      } catch (e) {
+        // Аккаунт заблокировали, пока человек был в сети. Без объяснения это
+        // выглядит как поломка сайта, поэтому причину переносим на экран входа.
+        if (e instanceof ApiError && e.code === 'banned' && alive) setBanNotice(e.message);
+        clearToken(); // токен протух или аккаунт заблокирован — выходим
       } finally {
         if (alive) setAuthChecked(true);
       }
@@ -407,6 +412,7 @@ export default function App() {
         initialTab={authTab}
         onAuthed={setCurrentUser}
         onBack={() => setAuthView('landing')}
+        notice={banNotice}
       />
     );
   }

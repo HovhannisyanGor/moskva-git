@@ -41,3 +41,4 @@ export const limitComment = rateLimit('comment', 40, 10 * MIN);    // 40 ком�
 export const limitMessage = rateLimit('message', 90, MIN);         // 90 сообщений / мин (щедро)
 export const limitPin = rateLimit('pin', 15, 60 * MIN);            // 15 меток / час
 export const limitSupport = rateLimit('support', 5, 30 * MIN);     // 5 обращений / 30 мин
+export const limitReport = rateLimit('report', 20, 60 * MIN);      // 20 жалоб / час (против «карусели» жалоб)

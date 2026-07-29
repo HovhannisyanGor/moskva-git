@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { config } from './config.js';
 import { db } from './db.js';
 import { syncAdminRole } from './users.js';
+import { banState, banMessage } from './moderation.js';
 
 // Пароль никогда не храним в открытом виде — только его «хеш» (необратимый отпечаток).
 export function hashPassword(plain) {
@@ -22,15 +23,38 @@ export function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Нужен вход' });
+
+  // Разбор токена — отдельно от работы с базой: иначе ошибка запроса к БД
+  // выглядела бы как «неверный токен» и увела бы отладку не туда.
+  let payload;
   try {
-    const payload = jwt.verify(token, config.jwtSecret);
-    req.userId = payload.id;
-    // Отмечаем активность — для статуса «онлайн». Дёшево: один UPDATE по id.
-    db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(new Date().toISOString(), payload.id);
-    next();
+    payload = jwt.verify(token, config.jwtSecret);
   } catch {
     return res.status(401).json({ error: 'Неверный или просроченный токен' });
   }
+
+  const user = db
+    .prepare('SELECT id, banned_until, ban_reason FROM users WHERE id = ?')
+    .get(payload.id);
+  // Токен ещё живой, а пользователя уже нет (удалили аккаунт) — считаем, что входа нет.
+  if (!user) return res.status(401).json({ error: 'Нужен вход' });
+
+  // Бан проверяем здесь, в единственной общей точке: так он закрывает СРАЗУ всё
+  // (посты, сообщения, метки, реакции), и про новый маршрут нельзя забыть.
+  const ban = banState(user);
+  if (ban.banned) {
+    return res.status(403).json({
+      error: banMessage(ban),
+      code: 'banned',
+      bannedUntil: ban.until,
+      forever: !!ban.forever,
+    });
+  }
+
+  req.userId = payload.id;
+  // Отмечаем активность — для статуса «онлайн». Дёшево: один UPDATE по id.
+  db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(new Date().toISOString(), payload.id);
+  next();
 }
 
 // Middleware: пускает дальше только администраторов. Ставится ПОСЛЕ requireAuth,

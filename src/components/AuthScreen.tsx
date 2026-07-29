@@ -11,10 +11,13 @@ export default function AuthScreen({
   onAuthed,
   initialTab = 'register',
   onBack,
+  notice = '',
 }: {
   onAuthed: (u: ApiUser) => void;
   initialTab?: 'login' | 'register';
   onBack?: () => void;
+  /** Сообщение от приложения (например, причина блокировки) — показываем сразу. */
+  notice?: string;
 }) {
   const { effective } = useTheme();
   const { t } = useI18n();
@@ -37,7 +40,9 @@ export default function AuthScreen({
   const [email, setEmail] = useState('');
   const [handle, setHandle] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  // Сообщение от приложения показываем как обычную ошибку, но оно уходит,
+  // как только человек сам попробует войти.
+  const [error, setError] = useState(notice);
   const [busy, setBusy] = useState(false);
   // Новый пользователь, которого нужно провести через онбординг профиля.
   const [onboarding, setOnboarding] = useState<ApiUser | null>(null);

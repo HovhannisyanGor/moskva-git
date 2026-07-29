@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { limitRegister } from '../ratelimit.js';
+import { banState, banMessage } from '../moderation.js';
 import { hashPassword, verifyPassword, signToken, requireAuth } from '../auth.js';
 import { toPublicUser, syncAdminRole } from '../users.js';
 
@@ -150,6 +151,18 @@ authRouter.post('/login', (req, res) => {
   }
 
   clearLoginAttempts(req); // успешный вход — сбрасываем счётчик
+
+  // Пароль верный, но аккаунт заблокирован. Говорим об этом прямо: иначе
+  // человек увидел бы «неверный пароль» и пошёл его восстанавливать.
+  const ban = banState(user);
+  if (ban.banned)
+    return res.status(403).json({
+      error: banMessage(ban),
+      code: 'banned',
+      bannedUntil: ban.until,
+      forever: !!ban.forever,
+    });
+
   syncAdminRole(user); // email мог попасть в ADMIN_EMAILS уже после регистрации
   const token = signToken(user);
   res.json({ token, user: toPublicUser(user) });

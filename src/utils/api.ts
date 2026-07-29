@@ -108,11 +108,45 @@ export interface AdminUser {
   role: 'user' | 'admin';
   created_at: string;
   protected: boolean; // задан в ADMIN_EMAILS на сервере — роль не снять и не удалить
+  ban: BanState;
 }
 export interface AdminStats {
   users: number;
   admins: number;
   messages: number;
+  openReports: number;
+  banned: number;
+}
+
+// --- Модерация ---
+// Состояние блокировки: forever — навсегда, иначе until = дата снятия.
+export interface BanState {
+  banned: boolean;
+  forever?: boolean;
+  until?: string;
+  reason?: string;
+}
+
+// Причины жалобы. Коды общие с сервером и приложением, подписи переводятся у клиента.
+export const REPORT_REASONS = ['spam', 'abuse', 'adult', 'violence', 'fake', 'other'] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+// На что можно пожаловаться.
+export type ReportTarget = 'post' | 'comment' | 'message' | 'group_message' | 'pin' | 'user';
+
+export interface AdminReport {
+  id: number;
+  targetType: ReportTarget;
+  targetId: number;
+  reason: ReportReason;
+  note: string;
+  snapshot: string; // копия текста на момент жалобы (оригинал могли удалить)
+  status: 'open' | 'resolved' | 'rejected';
+  createdAt: string;
+  resolvedAt: string;
+  reportsOnTarget: number; // сколько всего жалоб на эту же запись
+  reporter: { id: number; handle: string; name: string };
+  target: { id: number; handle: string; name: string; ban: BanState };
 }
 
 // --- Метки на карте ---
@@ -487,6 +521,57 @@ export const api = {
       method: 'DELETE',
       auth: true,
     });
+  },
+
+  // --- Модерация ---
+  // Пожаловаться. already = true означает, что жалоба от этого человека на эту
+  // запись уже была: для него это не ошибка.
+  async report(input: {
+    targetType: ReportTarget;
+    targetId: number;
+    reason: ReportReason;
+    note?: string;
+  }) {
+    return request<{ ok: boolean; already?: boolean }>('/api/reports', {
+      method: 'POST',
+      body: input,
+      auth: true,
+    });
+  },
+  async adminReports(status: 'open' | 'resolved' | 'rejected' | 'all' = 'open') {
+    const data = await request<{ reports: AdminReport[] }>(`/api/admin/reports?status=${status}`, {
+      auth: true,
+    });
+    return data.reports;
+  },
+  // action: resolve — жалоба обоснованна, reject — отклонена.
+  // deleteContent удаляет саму запись, на которую пожаловались.
+  async adminResolveReport(
+    id: number,
+    action: 'resolve' | 'reject',
+    deleteContent = false,
+  ) {
+    return request<{ ok: boolean; deletedContent: number }>(`/api/admin/reports/${id}`, {
+      method: 'PATCH',
+      body: { action, deleteContent },
+      auth: true,
+    });
+  },
+  // days = 0 или не задано — блокировка навсегда.
+  async adminBan(id: number, reason: string, days = 0) {
+    const data = await request<{ user: AdminUser }>(`/api/admin/users/${id}/ban`, {
+      method: 'POST',
+      body: { reason, days },
+      auth: true,
+    });
+    return data.user;
+  },
+  async adminUnban(id: number) {
+    const data = await request<{ user: AdminUser }>(`/api/admin/users/${id}/ban`, {
+      method: 'DELETE',
+      auth: true,
+    });
+    return data.user;
   },
 
   // --- Поддержка ---

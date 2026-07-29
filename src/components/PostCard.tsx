@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { api, type PostItem, type PostComment, type ChatUser, type Attachment } from '../utils/api';
+import { api, type PostItem, type PostComment, type ChatUser, type Attachment, type ReportTarget } from '../utils/api';
 import { AttachmentsView } from './Attachments';
+import ReportDialog from './ReportDialog';
 import { useI18n } from '../i18n';
 import { timeAgo } from '../utils/time';
 
@@ -42,6 +43,8 @@ export default function PostCard({
   const [comments, setComments] = useState<PostComment[]>([]);
   const [cInput, setCInput] = useState('');
   const [cBusy, setCBusy] = useState(false);
+  // Что сейчас обжалуется: сам пост или конкретный комментарий.
+  const [reporting, setReporting] = useState<{ type: ReportTarget; id: number } | null>(null);
   const a = post.author;
   // Обычно сервер отдаёт заполненный attachments (старое одиночное фото он
   // заворачивает во вложение сам). Фолбэк на post.image — на случай записи,
@@ -135,9 +138,19 @@ export default function PostCard({
           <span className="post-name">{a?.name || '—'}</span>
           <span className="post-when">{timeAgo(post.createdAt, locale)}</span>
         </button>
-        {post.mine && (
+        {post.mine ? (
           <button type="button" className="post-del" onClick={deletePost} aria-label={t('post.delete')} title={t('post.delete')}>
             🗑
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="post-report"
+            onClick={() => setReporting({ type: 'post', id: post.id })}
+            aria-label={t('report.action')}
+            title={t('report.action')}
+          >
+            ⚑
           </button>
         )}
       </header>
@@ -183,7 +196,7 @@ export default function PostCard({
                   <span className="post-comment-text">{c.text}</span>
                   <span className="post-comment-when">{timeAgo(c.createdAt, locale)}</span>
                 </div>
-                {c.mine && (
+                {c.mine ? (
                   <button
                     type="button"
                     className="post-comment-del"
@@ -191,6 +204,16 @@ export default function PostCard({
                     aria-label={t('post.delete')}
                   >
                     ×
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="post-comment-del"
+                    onClick={() => setReporting({ type: 'comment', id: c.id })}
+                    aria-label={t('report.action')}
+                    title={t('report.action')}
+                  >
+                    ⚑
                   </button>
                 )}
               </div>
@@ -210,6 +233,14 @@ export default function PostCard({
             </button>
           </div>
         </div>
+      )}
+
+      {reporting && (
+        <ReportDialog
+          targetType={reporting.type}
+          targetId={reporting.id}
+          onClose={() => setReporting(null)}
+        />
       )}
     </article>
   );

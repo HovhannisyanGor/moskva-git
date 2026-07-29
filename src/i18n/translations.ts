@@ -372,6 +372,21 @@ export const ru: Record<string, string> = {
   'att.err.readError': 'Не удалось прочитать файл',
   'att.err.imageError': 'Не удалось обработать изображение',
 
+  // Жалобы на контент
+  'report.action': 'Пожаловаться',
+  'report.title': 'Пожаловаться',
+  'report.sub': 'Модератор посмотрит и примет решение.',
+  'report.reason.spam': 'Спам или реклама',
+  'report.reason.abuse': 'Оскорбления или травля',
+  'report.reason.adult': 'Материалы 18+',
+  'report.reason.violence': 'Насилие или угрозы',
+  'report.reason.fake': 'Обман или фейк',
+  'report.reason.other': 'Другое',
+  'report.notePh': 'Что именно не так? Необязательно',
+  'report.send': 'Отправить',
+  'report.sent': 'Жалоба отправлена',
+  'report.already': 'Вы уже жаловались на это',
+
   // Профиль: записи, фото, места
   'profile.wall': 'Записи',
   'profile.photos': 'Фотографии',
@@ -766,6 +781,21 @@ export const en: Record<string, string> = {
   'att.err.blockedType': 'This file type cannot be attached',
   'att.err.readError': 'Could not read the file',
   'att.err.imageError': 'Could not process the image',
+
+  // Content reports
+  'report.action': 'Report',
+  'report.title': 'Report',
+  'report.sub': 'A moderator will review this and decide.',
+  'report.reason.spam': 'Spam or advertising',
+  'report.reason.abuse': 'Harassment or abuse',
+  'report.reason.adult': 'Adult content',
+  'report.reason.violence': 'Violence or threats',
+  'report.reason.fake': 'Scam or fake',
+  'report.reason.other': 'Something else',
+  'report.notePh': "What exactly is wrong? Optional",
+  'report.send': 'Send',
+  'report.sent': 'Report sent',
+  'report.already': 'You already reported this',
 
   // Profile: posts, photos, places
   'profile.wall': 'Posts',
