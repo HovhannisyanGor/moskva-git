@@ -163,34 +163,28 @@ systemctl restart localee-api
 
 ## Создатели
 
-<table>
-  <tr>
-    <td align="center" width="170">
-      <a href="https://github.com/HovhannisyanGor">
-        <img src="https://github.com/HovhannisyanGor.png?size=100" width="88"><br>
-        <b>Гор Оганнисян</b>
-      </a><br>
-      <sub>@HovhannisyanGor</sub>
-    </td>
-    <td>
-      Сайт и бэкенд: API и база, карта на Яндексе, лента и вложения, модерация,
-      файловое хранилище, деплой и инфраструктура.
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="170">
-      <a href="https://github.com/term1x1">
-        <img src="https://github.com/term1x1.png?size=100" width="88"><br>
-        <b>Эрик Жамкочян</b>
-      </a><br>
-      <sub>@term1x1</sub>
-    </td>
-    <td>
-      iOS-приложение и общие части: чаты и группы, профиль и настройки,
-      интерфейс ленты, достижения.
-    </td>
-  </tr>
-</table>
+Делаем вдвоём — и сайт, и приложение, и бэкенд.
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="200">
+        <a href="https://github.com/HovhannisyanGor">
+          <img src="https://github.com/HovhannisyanGor.png?size=100" width="90"><br>
+          <b>Гор Оганнисян</b>
+        </a><br>
+        <sub>@HovhannisyanGor</sub>
+      </td>
+      <td align="center" width="200">
+        <a href="https://github.com/term1x1">
+          <img src="https://github.com/term1x1.png?size=100" width="90"><br>
+          <b>Эрик Жамкочян</b>
+        </a><br>
+        <sub>@term1x1</sub>
+      </td>
+    </tr>
+  </table>
+</div>
 
 Проект начат в июле 2026 года.
 
