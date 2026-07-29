@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { api, type PostItem, type PostComment, type ChatUser } from '../utils/api';
+import { api, type PostItem, type PostComment, type ChatUser, type Attachment } from '../utils/api';
+import { AttachmentsView } from './Attachments';
 import { useI18n } from '../i18n';
 import { timeAgo } from '../utils/time';
 
@@ -42,6 +43,15 @@ export default function PostCard({
   const [cInput, setCInput] = useState('');
   const [cBusy, setCBusy] = useState(false);
   const a = post.author;
+  // Обычно сервер отдаёт заполненный attachments (старое одиночное фото он
+  // заворачивает во вложение сам). Фолбэк на post.image — на случай записи,
+  // пришедшей из старого кеша.
+  const shown: Attachment[] =
+    post.attachments?.length > 0
+      ? post.attachments
+      : post.image
+        ? [{ type: 'image', data: post.image }]
+        : [];
 
   async function toggleLike() {
     const wasLiked = liked;
@@ -133,11 +143,7 @@ export default function PostCard({
       </header>
 
       {post.text && <div className="post-text">{post.text}</div>}
-      {post.image && (
-        <div className="post-image">
-          <img src={post.image} alt="" />
-        </div>
-      )}
+      <AttachmentsView attachments={shown} />
 
       <div className="post-actions">
         <button type="button" className={`post-action${liked ? ' post-action--liked' : ''}`} onClick={toggleLike}>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   api,
+  type Attachment,
   type ChatListItem,
   type ChatMessageItem,
   type ChatUser,
@@ -8,6 +9,8 @@ import {
   type GroupInfo,
   type GroupMessageItem,
 } from '../utils/api';
+import { addFiles, MAX_ATTACHMENTS } from '../utils/attachments';
+import { AttachmentsView, AttachmentPreviewRow, ClipIcon, PhotoIcon } from './Attachments';
 import { useI18n } from '../i18n';
 import GroupSettings from './GroupSettings';
 import CreateGroup from './CreateGroup';
@@ -72,11 +75,19 @@ export default function ChatsPage({
   onRead,
 }: ChatsPageProps) {
   const { t, locale } = useI18n();
+
+  // Текст последнего сообщения для списка чатов. Пустой текст здесь означает
+  // ровно одно: сообщение состояло из вложений — совсем пустые сервер не
+  // принимает. Поэтому вместо пустой строки показываем «Вложение».
+  const preview = (text: string) => text || t('chats.attachmentOnly');
+
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   const [activeUser, setActiveUser] = useState<ChatUser | null>(null);
   const [messages, setMessages] = useState<AnyMsg[]>([]);
   const [input, setInput] = useState('');
+  const [atts, setAtts] = useState<Attachment[]>([]); // вложения для нового сообщения
+  const [attError, setAttError] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mobilePane, setMobilePane] = useState<'list' | 'chat'>('list');
@@ -102,6 +113,8 @@ export default function ChatsPage({
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<number | null>(null);
+  const chatPhotoRef = useRef<HTMLInputElement>(null);
+  const chatFileRef = useRef<HTMLInputElement>(null);
 
   const loadChats = useCallback(async () => {
     // Грузим личные чаты и группы НЕЗАВИСИМО: если один запрос упадёт (например,
@@ -225,6 +238,8 @@ export default function ChatsPage({
     setReplyTo(null);
     setEditing(null);
     setInput('');
+    setAtts([]);
+    setAttError('');
   }
 
   function openGroup(g: GroupInfo) {
@@ -240,6 +255,8 @@ export default function ChatsPage({
     setReplyTo(null);
     setEditing(null);
     setInput('');
+    setAtts([]);
+    setAttError('');
     setShowSettings(false);
   }
 
@@ -258,22 +275,31 @@ export default function ChatsPage({
 
   async function send() {
     const text = input.trim();
-    if (!text || sending || (activeUserId == null && !activeGroup)) return;
+    // Сообщение из одних вложений (без текста) отправлять можно — сервер это принимает.
+    if ((!text && atts.length === 0) || sending || (activeUserId == null && !activeGroup)) return;
     setSending(true);
     try {
       if (editing) {
+        // Правка меняет только текст: менять вложения у отправленного сообщения
+        // сервер не умеет, и в приложении этого тоже нет.
+        if (!text) return;
         const updated = isGroup
           ? await api.groupEditMessage(editing.id, text)
           : await api.chatEditMessage(editing.id, text);
         setMessages((prev) => prev.map((x) => (x.id === editing.id ? updated : x)));
         setEditing(null);
       } else {
-        const opts = replyTo ? { replyTo: replyTo.id } : {};
+        const opts = {
+          ...(replyTo ? { replyTo: replyTo.id } : {}),
+          ...(atts.length > 0 ? { attachments: atts } : {}),
+        };
         const msg = isGroup
           ? await api.groupSend(activeGroup!.id, text, opts)
           : await api.chatSend(activeUserId!, text, opts);
         setMessages((prev) => [...prev, msg]);
         setReplyTo(null);
+        setAtts([]);
+        setAttError('');
       }
       setInput('');
       loadChats();
@@ -282,6 +308,17 @@ export default function ChatsPage({
     } finally {
       setSending(false);
     }
+  }
+
+  // Выбор вложений в чате: те же правила, что в композере поста.
+  async function pickAtt(e: React.ChangeEvent<HTMLInputElement>, kind: 'image' | 'file') {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    setAttError('');
+    const { list, error } = await addFiles(atts, files, kind);
+    setAtts(list);
+    if (error) setAttError(t(`att.err.${error}`));
   }
 
   // --- Действия из меню ---
@@ -449,7 +486,7 @@ export default function ChatsPage({
                     <span className="chat-item-name">{it.dm.user.name}</span>
                     <span className="chat-item-last">
                       {it.dm.last
-                        ? (it.dm.last.fromMe ? t('chats.you') : '') + it.dm.last.text
+                        ? (it.dm.last.fromMe ? t('chats.you') : '') + preview(it.dm.last.text)
                         : t('chats.noMessages')}
                     </span>
                   </span>
@@ -473,7 +510,8 @@ export default function ChatsPage({
                     <span className="chat-item-name">{it.group.name}</span>
                     <span className="chat-item-last">
                       {it.group.last
-                        ? (it.group.last.fromMe ? t('chats.you') : it.group.last.author + ': ') + it.group.last.text
+                        ? (it.group.last.fromMe ? t('chats.you') : it.group.last.author + ': ') +
+                          preview(it.group.last.text)
                         : `${it.group.memberCount} участников`}
                     </span>
                   </span>
@@ -566,10 +604,21 @@ export default function ChatsPage({
                     <div
                       className={`chat-msg chat-msg--${m.fromMe ? 'me' : 'them'}${sameAsPrev ? ' chat-msg--grouped' : ''}`}
                     >
-                      <button
-                        type="button"
+                      {/* Пузырь — div, а не button: внутри лежат кликабельные фото и
+                          ссылка на скачивание файла, а интерактивные элементы внутри
+                          кнопки недопустимы и не работали бы. Клик по пузырю по-прежнему
+                          открывает меню действий, вложения гасят его у себя. */}
+                      <div
                         className="chat-bubble"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setMenuMsg(m)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setMenuMsg(m);
+                          }
+                        }}
                         title={t('chats.msgActions')}
                       >
                         {isGroup && !m.fromMe && !sameAsPrev && (m as GroupMessageItem).sender && (
@@ -590,8 +639,13 @@ export default function ChatsPage({
                             <span className="chat-quote-text">{m.replyTo.text}</span>
                           </span>
                         )}
-                        <span className="chat-bubble-text">{m.text}</span>
-                      </button>
+                        {m.attachments?.length > 0 && (
+                          <div className="chat-bubble-att" onClick={(e) => e.stopPropagation()}>
+                            <AttachmentsView attachments={m.attachments} />
+                          </div>
+                        )}
+                        {m.text && <span className="chat-bubble-text">{m.text}</span>}
+                      </div>
                       {!sameAsNext && (
                         <div className="chat-msg-time">
                           {m.edited && <span className="chat-edited">{t('chats.edited')}</span>}
@@ -627,7 +681,56 @@ export default function ChatsPage({
               </div>
             )}
 
+            {attError && <div className="chat-att-error">⚠️ {attError}</div>}
+            <AttachmentPreviewRow
+              items={atts}
+              onRemove={(i) => {
+                setAtts((p) => p.filter((_, x) => x !== i));
+                setAttError(''); // убрали лишнее — предупреждение снимаем
+              }}
+            />
+
             <div className="chat-input">
+              {/* При правке сообщения вложения не трогаем — сервер меняет только текст. */}
+              {!editing && (
+                <>
+                  <button
+                    className="chat-attach"
+                    type="button"
+                    onClick={() => chatPhotoRef.current?.click()}
+                    disabled={atts.length >= MAX_ATTACHMENTS}
+                    aria-label={t('post.addPhoto')}
+                    title={t('post.addPhoto')}
+                  >
+                    <PhotoIcon />
+                  </button>
+                  <button
+                    className="chat-attach"
+                    type="button"
+                    onClick={() => chatFileRef.current?.click()}
+                    disabled={atts.length >= MAX_ATTACHMENTS}
+                    aria-label={t('att.addFile')}
+                    title={t('att.addFile')}
+                  >
+                    <ClipIcon />
+                  </button>
+                  <input
+                    ref={chatPhotoRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    onChange={(e) => pickAtt(e, 'image')}
+                  />
+                  <input
+                    ref={chatFileRef}
+                    type="file"
+                    multiple
+                    hidden
+                    onChange={(e) => pickAtt(e, 'file')}
+                  />
+                </>
+              )}
               <input
                 ref={inputRef}
                 placeholder={editing ? t('chats.editPh') : t('chats.messagePh')}
@@ -642,7 +745,7 @@ export default function ChatsPage({
                 className="chat-send"
                 type="button"
                 onClick={send}
-                disabled={sending || !input.trim()}
+                disabled={sending || (!input.trim() && (editing != null || atts.length === 0))}
                 aria-label={editing ? t('common.save') : t('common.message')}
               >
                 {editing ? '✓' : '➤'}

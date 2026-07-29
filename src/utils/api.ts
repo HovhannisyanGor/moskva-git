@@ -157,10 +157,22 @@ export interface ReplyPreview {
   text: string;
   fromMe: boolean;
 }
+// Вложение сообщения или поста: несколько фото и файлов в одной записи.
+// Формат общий с приложением — сервер хранит их JSON-массивом (server/src/attachments.js).
+// Сервер всегда отдаёт заполненный attachments: если запись старая и в ней было
+// только одиночное поле image, он заворачивает его во вложение сам.
+export interface Attachment {
+  type: 'image' | 'file';
+  data: string; // data:...;base64,...
+  name?: string; // имя файла (у типа file)
+  mime?: string; // MIME файла (у типа file)
+}
+
 export interface ChatMessageItem {
   id: number;
   fromMe: boolean;
   text: string;
+  attachments: Attachment[];
   createdAt: string;
   edited: boolean;
   forwardedFrom: string; // имя автора при пересылке ('' — обычное сообщение)
@@ -192,6 +204,7 @@ export interface GroupMessageItem {
   id: number;
   fromMe: boolean;
   text: string;
+  attachments: Attachment[];
   createdAt: string;
   edited: boolean;
   forwardedFrom: string;
@@ -204,7 +217,8 @@ export interface PostItem {
   id: number;
   author: ChatUser | null;
   text: string;
-  image: string; // картинка поста (data URL) или ''
+  image: string; // первое фото (data URL) или '' — старое поле, сервер шлёт его для совместимости
+  attachments: Attachment[]; // все вложения: фото + файлы
   createdAt: string;
   likeCount: number;
   liked: boolean; // лайкнул ли я
@@ -304,11 +318,16 @@ export const api = {
   async chatSend(
     userId: number,
     text: string,
-    opts: { replyTo?: number; forwardedFrom?: string } = {},
+    opts: { replyTo?: number; forwardedFrom?: string; attachments?: Attachment[] } = {},
   ) {
     const data = await request<{ message: ChatMessageItem }>(`/api/chats/${userId}/messages`, {
       method: 'POST',
-      body: { text, replyTo: opts.replyTo, forwardedFrom: opts.forwardedFrom },
+      body: {
+        text,
+        replyTo: opts.replyTo,
+        forwardedFrom: opts.forwardedFrom,
+        attachments: opts.attachments,
+      },
       auth: true,
     });
     return data.message;
@@ -349,10 +368,14 @@ export const api = {
       auth: true,
     });
   },
-  async groupSend(id: number, text: string, opts: { replyTo?: number } = {}) {
+  async groupSend(
+    id: number,
+    text: string,
+    opts: { replyTo?: number; attachments?: Attachment[] } = {},
+  ) {
     const data = await request<{ message: GroupMessageItem }>(`/api/groups/${id}/messages`, {
       method: 'POST',
-      body: { text, replyTo: opts.replyTo },
+      body: { text, replyTo: opts.replyTo, attachments: opts.attachments },
       auth: true,
     });
     return data.message;
@@ -491,7 +514,7 @@ export const api = {
     const data = await request<{ photos: PhotoItem[] }>(`/api/posts/photos/${userId}`, { auth: true });
     return data.photos;
   },
-  async createPost(input: { text: string; image?: string }) {
+  async createPost(input: { text: string; image?: string; attachments?: Attachment[] }) {
     const data = await request<{ post: PostItem }>('/api/posts', { method: 'POST', body: input, auth: true });
     return data.post;
   },

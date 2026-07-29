@@ -12,6 +12,12 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "VITE_API_URL=http://localhost:4123 npm run dev -- --port 5174"],
       "port": 5174
+    },
+    {
+      "name": "localee-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "server", "run", "dev"],
+      "port": 4000
     }
   ]
 }

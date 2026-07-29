@@ -1573,9 +1573,33 @@ html, body { background: var(--bg); }
 .chat-route-stop { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text); padding: 3px 0; }
 .chat-route-n { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .chat-route-open { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; border: 0.5px solid var(--accent); background: transparent; color: var(--accent); border-radius: var(--radius-sm); cursor: pointer; }
-.chat-input { display: flex; gap: 10px; padding: 12px 18px; border-top: 0.5px solid var(--border); }
+.chat-input { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 0.5px solid var(--border); }
 .chat-input input { flex: 1; font-size: 14px; padding: 11px 14px; border-radius: 22px; border: 0.5px solid var(--border-2); background: var(--bg-2); color: var(--text); }
 .chat-send { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; }
+/* Скрепка и фото у поля ввода */
+.chat-attach {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; padding: 0;
+  border: none; background: transparent; color: var(--text-3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.chat-attach:hover { background: var(--bg-3); color: var(--text); }
+.chat-attach:disabled { opacity: 0.4; cursor: default; background: transparent; }
+.chat-att-error { color: var(--accent); font-size: 12.5px; padding: 8px 18px 0; }
+/* Ряд превью над полем ввода */
+.chat-input + .att-row, .chat-att-error + .att-row { padding: 0 18px; }
+.att-row { padding-left: 18px; padding-right: 18px; }
+.composer .att-row { padding-left: 0; padding-right: 0; }
+
+/* Вложения внутри пузыря сообщения */
+.chat-bubble-att { cursor: default; max-width: 260px; }
+.chat-bubble-att .att { margin-top: 0; }
+.chat-bubble-att .att-one img { max-height: 260px; }
+.chat-bubble-att .att-cell img { height: 92px; }
+/* В своём пузыре (акцентный фон) карточка файла — полупрозрачная, иначе не читается */
+.chat-msg--me .chat-bubble-att .att-file { background: rgba(255,255,255,0.18); color: #fff; }
+.chat-msg--me .chat-bubble-att .att-file:hover { background: rgba(255,255,255,0.28); }
+.chat-msg--me .chat-bubble-att .att-file-ic { background: rgba(255,255,255,0.25); }
+.chat-msg--me .chat-bubble-att .att-file-size { color: rgba(255,255,255,0.75); }
 
 /* Группировка сообщений: подряд от одного автора — плотнее и со «склеенными» углами */
 .chat-msg--grouped { margin-top: -6px; }
@@ -2299,20 +2323,86 @@ html, body { background: var(--bg); }
   flex: 1; min-width: 0; resize: none; border: none; background: transparent;
   color: var(--text); font: inherit; font-size: 15px; line-height: 1.5; padding: 9px 0; outline: none;
 }
-.composer-preview { position: relative; margin-top: 10px; border-radius: var(--radius); overflow: hidden; }
-.composer-preview img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
-.composer-preview-x {
-  position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%;
-  border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 20px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
 .composer-error { color: var(--accent); font-size: 13px; margin-top: 8px; }
-.composer-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; gap: 10px; }
-.composer-photo {
+.composer-actions { display: flex; align-items: center; margin-top: 12px; gap: 8px; }
+/* Кнопки «Фото» и «Файл»; «Опубликовать» отжимается вправо */
+.composer-attach {
+  display: inline-flex; align-items: center; gap: 6px;
   border: none; background: var(--bg-3); color: var(--text-2); cursor: pointer;
   font-size: 13.5px; font-weight: 500; padding: 8px 13px; border-radius: 18px;
 }
-.composer-photo:hover { background: var(--border-2); }
+.composer-attach:hover { background: var(--border-2); }
+.composer-attach:disabled { opacity: 0.45; cursor: default; }
+.composer-publish { margin-left: auto; }
+
+/* ============================================================
+   ВЛОЖЕНИЯ (несколько фото и файлы в постах и сообщениях)
+   Раскладка повторяет приложение: одно фото — крупно, несколько — сеткой,
+   файлы — карточками со скачиванием.
+   ============================================================ */
+.att { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.att-one, .att-cell {
+  border: none; padding: 0; background: var(--bg-3); cursor: zoom-in;
+  border-radius: var(--radius); overflow: hidden; display: block;
+}
+.att-one img { width: 100%; max-height: 420px; object-fit: cover; display: block; }
+.att-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.att-cell img { width: 100%; height: 150px; object-fit: cover; display: block; }
+/* Нечётное число фото: последнее занимает всю ширину, чтобы не было дырки */
+.att-grid .att-cell:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+.att-file {
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+  background: var(--bg-3); border-radius: var(--radius); padding: 8px 10px;
+  color: var(--text); max-width: 320px;
+}
+.att-file:hover { background: var(--border-2); }
+.att-file-ic {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center;
+}
+.att-file-body { display: flex; flex-direction: column; min-width: 0; }
+.att-file-name { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-file-size { font-size: 11.5px; color: var(--text-3); }
+
+/* Ряд превью в композере */
+.att-row { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 2px; }
+.att-chip {
+  position: relative; width: 72px; height: 72px; flex-shrink: 0;
+  border-radius: 10px; overflow: hidden; background: var(--bg-3);
+}
+.att-chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.att-chip-file {
+  width: 100%; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px; color: var(--accent); padding: 4px;
+  box-sizing: border-box;
+}
+.att-chip-name {
+  font-size: 9px; color: var(--text-3); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.att-chip-x {
+  position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 14px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+}
+
+/* Просмотр фото на весь экран */
+.img-lightbox {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+  animation: fadeIn 0.18s ease; padding: 24px; cursor: zoom-out;
+}
+.img-lightbox-img {
+  max-width: 100%; max-height: 100%; object-fit: contain; cursor: default;
+  border-radius: 10px; animation: lightboxPop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.img-lightbox-close {
+  position: absolute; top: 16px; right: 18px; width: 38px; height: 38px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
 .composer-publish {
   border: none; background: var(--accent); color: #fff; cursor: pointer;
   font-size: 14px; font-weight: 600; padding: 9px 20px; border-radius: 20px;
@@ -2351,8 +2441,6 @@ html, body { background: var(--bg); }
 }
 .post-del:hover { opacity: 1; background: var(--bg-3); }
 .post-text { font-size: 15px; line-height: 1.55; color: var(--text); white-space: pre-wrap; word-wrap: break-word; margin-top: 11px; }
-.post-image { margin-top: 11px; border-radius: var(--radius); overflow: hidden; }
-.post-image img { width: 100%; max-height: 520px; object-fit: cover; display: block; }
 .post-actions { display: flex; gap: 8px; margin-top: 12px; }
 .post-action {
   display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer;

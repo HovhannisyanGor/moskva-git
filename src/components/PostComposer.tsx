@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
-import { api, ApiError, type PostItem } from '../utils/api';
-import { fileToImage } from '../utils/avatar';
+import { api, ApiError, type PostItem, type Attachment } from '../utils/api';
+import { addFiles, MAX_ATTACHMENTS } from '../utils/attachments';
+import { AttachmentPreviewRow, ClipIcon, PhotoIcon } from './Attachments';
 import { useI18n } from '../i18n';
 
-// Поле «написать пост»: текст + необязательная картинка. Используется в ленте и в профиле.
+// Поле «написать пост»: текст + вложения (несколько фото и файлы, как в приложении).
+// Используется в ленте и в профиле.
 export default function PostComposer({
   me,
   onPosted,
@@ -13,33 +15,35 @@ export default function PostComposer({
 }) {
   const { t } = useI18n();
   const [text, setText] = useState('');
-  const [image, setImage] = useState('');
+  const [atts, setAtts] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const photoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function pick(e: React.ChangeEvent<HTMLInputElement>, kind: 'image' | 'file') {
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
-    if (!file) return;
+    if (files.length === 0) return;
     setError('');
-    try {
-      setImage(await fileToImage(file, 1280, 0.82));
-    } catch {
-      setError(t('ep.imageError'));
-    }
+    const { list, error: err } = await addFiles(atts, files, kind);
+    setAtts(list);
+    if (err) setError(t(`att.err.${err}`));
   }
 
   async function publish() {
     const body = text.trim();
-    if ((!body && !image) || busy) return;
+    if ((!body && atts.length === 0) || busy) return;
     setBusy(true);
     setError('');
     try {
-      const post = await api.createPost({ text: body, image: image || undefined });
+      const post = await api.createPost({
+        text: body,
+        attachments: atts.length > 0 ? atts : undefined,
+      });
       onPosted(post);
       setText('');
-      setImage('');
+      setAtts([]);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('auth.error'));
     } finally {
@@ -50,6 +54,7 @@ export default function PostComposer({
   const avStyle = me.avatar
     ? { backgroundImage: `url(${me.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: me.color };
+  const full = atts.length >= MAX_ATTACHMENTS;
 
   return (
     <div className="composer">
@@ -67,32 +72,49 @@ export default function PostComposer({
         />
       </div>
 
-      {image && (
-        <div className="composer-preview">
-          <img src={image} alt="" />
-          <button
-            type="button"
-            className="composer-preview-x"
-            onClick={() => setImage('')}
-            aria-label={t('post.removePhoto')}
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AttachmentPreviewRow
+        items={atts}
+        onRemove={(i) => {
+          setAtts((p) => p.filter((_, x) => x !== i));
+          setError(''); // человек убрал лишнее — предупреждение больше не актуально
+        }}
+      />
 
       {error && <div className="composer-error">⚠️ {error}</div>}
 
       <div className="composer-actions">
-        <button type="button" className="composer-photo" onClick={() => fileRef.current?.click()}>
-          📷 {t('post.addPhoto')}
+        <button
+          type="button"
+          className="composer-attach"
+          onClick={() => photoRef.current?.click()}
+          disabled={full}
+          title={t('post.addPhoto')}
+        >
+          <PhotoIcon /> {t('post.addPhoto')}
         </button>
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickImage} />
+        <button
+          type="button"
+          className="composer-attach"
+          onClick={() => fileRef.current?.click()}
+          disabled={full}
+          title={t('att.addFile')}
+        >
+          <ClipIcon /> {t('att.addFile')}
+        </button>
+        <input
+          ref={photoRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => pick(e, 'image')}
+        />
+        <input ref={fileRef} type="file" multiple hidden onChange={(e) => pick(e, 'file')} />
         <button
           type="button"
           className="composer-publish"
           onClick={publish}
-          disabled={busy || (!text.trim() && !image)}
+          disabled={busy || (!text.trim() && atts.length === 0)}
         >
           {busy ? t('post.posting') : t('post.publish')}
         </button>

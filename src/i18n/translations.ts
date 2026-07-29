@@ -231,6 +231,7 @@ export const ru: Record<string, string> = {
   'chats.tapPlus': 'Нажми «+», чтобы начать чат.',
   'chats.you': 'Вы: ',
   'chats.youShort': 'Вы',
+  'chats.attachmentOnly': 'Вложение',
   'chats.noMessages': 'Нет сообщений',
   'chats.firstMessage': 'Сообщений пока нет — напиши первым 👋',
   'chats.messagePh': 'Сообщение...',
@@ -358,6 +359,18 @@ export const ru: Record<string, string> = {
   'post.deleteConfirm': 'Удалить этот пост? Действие необратимо.',
   'post.deleteCommentConfirm': 'Удалить комментарий?',
   'post.you': 'Вы',
+
+  // Вложения (несколько фото и файлы в постах и сообщениях)
+  'att.addFile': 'Файл',
+  'att.file': 'Файл',
+  'att.download': 'Скачать',
+  'att.remove': 'Убрать вложение',
+  'att.err.tooMany': 'Можно прикрепить не больше 10 вложений',
+  'att.err.tooBig': 'Файл слишком большой — до 6 МБ',
+  'att.err.tooHeavy': 'Вместе вложения слишком тяжёлые — уберите часть',
+  'att.err.blockedType': 'Такой тип файла прикрепить нельзя',
+  'att.err.readError': 'Не удалось прочитать файл',
+  'att.err.imageError': 'Не удалось обработать изображение',
 
   // Профиль: записи, фото, места
   'profile.wall': 'Записи',
@@ -613,6 +626,7 @@ export const en: Record<string, string> = {
   'chats.tapPlus': 'Tap “+” to start a chat.',
   'chats.you': 'You: ',
   'chats.youShort': 'You',
+  'chats.attachmentOnly': 'Attachment',
   'chats.noMessages': 'No messages',
   'chats.firstMessage': 'No messages yet — say hi 👋',
   'chats.messagePh': 'Message...',
@@ -740,6 +754,18 @@ export const en: Record<string, string> = {
   'post.deleteConfirm': "Delete this post? This can't be undone.",
   'post.deleteCommentConfirm': 'Delete this comment?',
   'post.you': 'You',
+
+  // Attachments (multiple photos and files in posts and messages)
+  'att.addFile': 'File',
+  'att.file': 'File',
+  'att.download': 'Download',
+  'att.remove': 'Remove attachment',
+  'att.err.tooMany': 'You can attach up to 10 items',
+  'att.err.tooBig': 'File is too large — 6 MB max',
+  'att.err.tooHeavy': 'Attachments are too heavy together — remove some',
+  'att.err.blockedType': 'This file type cannot be attached',
+  'att.err.readError': 'Could not read the file',
+  'att.err.imageError': 'Could not process the image',
 
   // Profile: posts, photos, places
   'profile.wall': 'Posts',
