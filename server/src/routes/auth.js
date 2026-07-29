@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { limitRegister } from '../ratelimit.js';
 import { banState, banMessage } from '../moderation.js';
+import { toStoredUrl, isStoredUrl } from '../storage.js';
 import { hashPassword, verifyPassword, signToken, requireAuth } from '../auth.js';
 import { toPublicUser, syncAdminRole } from '../users.js';
 
@@ -202,10 +203,13 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(handle))
     return res.status(400).json({ error: 'Ник: 3–20 символов, латиница, цифры или _' });
   // Аватар-фото: либо пусто, либо корректный data:image небольшого размера (~1 МБ).
-  if (avatar && (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(avatar) || avatar.length > 1_500_000))
+  // Уже сохранённая ссылка проходит без проверки: значит картинку не меняли.
+  if (avatar && !isStoredUrl(avatar) &&
+      (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(avatar) || avatar.length > 1_500_000))
     return res.status(400).json({ error: 'Картинка не подходит (формат или размер)', code: 'avatar_bad' });
   // Обложка профиля (шапка): тоже data:image, но допускаем чуть больше (~3 МБ).
-  if (cover && (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(cover) || cover.length > 3_000_000))
+  if (cover && !isStoredUrl(cover) &&
+      (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(cover) || cover.length > 3_000_000))
     return res.status(400).json({ error: 'Обложка не подходит (формат или размер)', code: 'cover_bad' });
   if (!validBirthdate(birthdate))
     return res.status(400).json({ error: 'Неверная дата рождения' });
@@ -215,10 +219,14 @@ authRouter.patch('/me', requireAuth, (req, res) => {
   if (db.prepare('SELECT 1 FROM users WHERE handle = ? AND id != ?').get(handle, req.userId))
     return res.status(409).json({ error: 'Этот ник уже занят' });
 
+  // Картинки уезжают в файловое хранилище, в базе остаётся только ссылка.
+  const avatarUrl = toStoredUrl(avatar);
+  const coverUrl = toStoredUrl(cover);
+
   db.prepare(
     'UPDATE users SET name = ?, bio = ?, city = ?, color = ?, letter = ?, handle = ?, avatar = ?, cover = ?, show_online = ?, birthdate = ?, gender = ?, interests = ?, show_birthyear = ? WHERE id = ?',
   ).run(
-    name, bio, city, color, letter, handle, avatar, cover, showOnline,
+    name, bio, city, color, letter, handle, avatarUrl, coverUrl, showOnline,
     birthdate, gender, interests, showBirthyear, req.userId,
   );
 

@@ -1,10 +1,18 @@
+import { storeDataUrl, storedSize, isStoredUrl, UPLOAD_PREFIX } from './storage.js';
+import { config } from './config.js';
+
 // Вложения сообщений и постов: несколько фото и файлов в одной записи.
 //
 // Храним JSON-массивом в колонке `attachments`. Для обратной совместимости
-// параллельно кладём первое фото в старую колонку `image` — её читают старые
-// клиенты и сайт (пока он не обновлён на галерею).
+// параллельно кладём первое фото в старую колонку `image`.
 //
-// Элемент: { type: 'image' | 'file', data: 'data:...;base64,...', name?, mime? }
+// Элемент: { type: 'image' | 'file', data: 'https://…/uploads/…', name?, mime?, size? }
+//
+// В `data` лежит ССЫЛКА, а не base64. Клиенты по-прежнему присылают base64
+// (менять формат запроса ради этого не стоило бы — сломались бы оба клиента),
+// но дальше он не едет в базу: файл сохраняется на диск, а в записи остаётся
+// адрес. Старые записи с data-URL продолжают работать — оба клиента показывают
+// и то, и другое.
 
 const MAX_ATTACHMENTS = 10;
 const MAX_ONE = 8 * 1024 * 1024; // ~8 МБ на одно вложение (base64)
@@ -21,28 +29,65 @@ export function parseIncomingAttachments(raw, legacyImage = '') {
   if (Array.isArray(raw)) {
     for (const a of raw.slice(0, MAX_ATTACHMENTS)) {
       const data = typeof a?.data === 'string' ? a.data : '';
-      if (data.length > MAX_ONE) continue;
       const type = a?.type === 'file' ? 'file' : 'image';
+
+      // Клиент прислал ссылку на уже сохранённый файл (пересылка, повторная
+      // отправка) — принимаем как есть. Только СВОИ ссылки: иначе через это
+      // поле можно было бы подсунуть чужой адрес и заставить клиентов его
+      // грузить.
+      if (isOwnUpload(data)) {
+        out.push(
+          type === 'image'
+            ? { type: 'image', data, size: Number(a?.size) || storedSize(data) }
+            : {
+                type: 'file',
+                data,
+                name: String(a?.name || 'файл').slice(0, 120),
+                mime: String(a?.mime || '').slice(0, 100),
+                size: Number(a?.size) || storedSize(data),
+              },
+        );
+        continue;
+      }
+
+      if (data.length > MAX_ONE) continue;
+      // Проверяем ДО сохранения: на диск не должно попадать ничего, что не
+      // прошло бы валидацию.
       if (type === 'image') {
         if (!IMAGE_RE.test(data)) continue;      // не картинка разрешённого формата — мимо
-        out.push({ type: 'image', data });
+        const saved = storeDataUrl(data);
+        if (!saved) continue;
+        out.push({ type: 'image', data: saved.url, size: saved.size });
       } else {
         const m = FILE_RE.exec(data);
         if (!m || BLOCKED_MIME.test(m[1])) continue; // не файл / опасный тип — мимо
+        const saved = storeDataUrl(data);
+        if (!saved) continue;
         out.push({
           type: 'file',
-          data,
+          data: saved.url,
           name: String(a?.name || 'файл').slice(0, 120),
           mime: m[1].slice(0, 100),
+          size: saved.size,
         });
       }
     }
   }
   // Старый клиент прислал одно фото полем image — заворачиваем во вложение.
-  if (out.length === 0 && typeof legacyImage === 'string' && IMAGE_RE.test(legacyImage)) {
-    out.push({ type: 'image', data: legacyImage });
+  if (out.length === 0 && typeof legacyImage === 'string') {
+    if (isOwnUpload(legacyImage)) {
+      out.push({ type: 'image', data: legacyImage, size: storedSize(legacyImage) });
+    } else if (IMAGE_RE.test(legacyImage)) {
+      const saved = storeDataUrl(legacyImage);
+      if (saved) out.push({ type: 'image', data: saved.url, size: saved.size });
+    }
   }
   return out;
+}
+
+// Ссылка ведёт в наше хранилище? Чужие адреса не принимаем.
+function isOwnUpload(s) {
+  return isStoredUrl(s) && s.startsWith(`${config.publicUrl}${UPLOAD_PREFIX}/`);
 }
 
 export function serializeAttachments(list) {

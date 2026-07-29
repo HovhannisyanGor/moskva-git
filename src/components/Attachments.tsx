@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Attachment } from '../utils/api';
-import { humanSize } from '../utils/attachments';
+import { humanSize, attachmentBytes } from '../utils/attachments';
 import { useI18n } from '../i18n';
 
 // Показ и выбор вложений: несколько фото и файлы в посте или сообщении.
@@ -85,6 +85,11 @@ export function AttachmentsView({ attachments }: { attachments: Attachment[] }) 
           key={i}
           href={a.data}
           download={a.name || 'file'}
+          // Файл лежит на другом домене (api.localee.ru), поэтому download
+          // браузер проигнорирует и просто откроет его — пусть в новой вкладке,
+          // а не вместо приложения.
+          target="_blank"
+          rel="noopener noreferrer"
           title={t('att.download')}
         >
           <span className="att-file-ic">
@@ -92,7 +97,7 @@ export function AttachmentsView({ attachments }: { attachments: Attachment[] }) 
           </span>
           <span className="att-file-body">
             <span className="att-file-name">{a.name || t('att.file')}</span>
-            <span className="att-file-size">{humanSize(a.data, locale)}</span>
+            <span className="att-file-size">{humanSize(attachmentBytes(a), locale)}</span>
           </span>
         </a>
       ))}

@@ -16,6 +16,7 @@ import { postsRouter } from './routes/posts.js';
 import { visitsRouter } from './routes/visits.js';
 import { placesRouter } from './routes/places.js';
 import { reportsRouter } from './routes/reports.js';
+import { UPLOAD_ROOT, UPLOAD_PREFIX } from './storage.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -27,6 +28,25 @@ app.use(cors({ origin: config.corsOrigin })); // разрешаем фронту
 // Лимит поднят под вложения: несколько фото + файлы в одном сообщении/посте.
 // Держим согласованным с nginx client_max_body_size (25M на проде).
 app.use(express.json({ limit: '25mb' }));
+
+// Загруженные картинки и документы. Имя файла — хеш его содержимого, поэтому
+// содержимое по адресу никогда не меняется: можно кешировать надолго и не
+// думать про инвалидацию.
+// immutable + год — браузер и приложение перекачивать не будут.
+app.use(
+  UPLOAD_PREFIX,
+  express.static(UPLOAD_ROOT, {
+    maxAge: '365d',
+    immutable: true,
+    index: false,
+    // Файлы отдаём на скачивание/показ, но НЕ даём браузеру исполнять их как
+    // страницу: содержимое загружают пользователи.
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    },
+  }),
+);
 
 // В режиме разработки отдаём простую страницу для ручной проверки API
 // (открой http://localhost:4000/). На проде (NODE_ENV=production) она НЕ публикуется.
@@ -78,4 +98,14 @@ app.use((err, req, res, next) => {
 
 app.listen(config.port, () => {
   console.log(`Localee API запущен: http://localhost:${config.port}`);
+  console.log(`Файлы: ${UPLOAD_ROOT} → ${config.publicUrl}${UPLOAD_PREFIX}/`);
+  // Ссылки на файлы уходят в базу целиком. Если на проде забыть PUBLIC_URL,
+  // туда запишется localhost — и картинки не откроются ни у кого, причём
+  // молча. Поэтому предупреждаем громко.
+  if (process.env.NODE_ENV === 'production' && !process.env.PUBLIC_URL) {
+    console.warn(
+      '\n!!! PUBLIC_URL не задан в .env — ссылки на файлы будут вести на localhost.\n' +
+        '!!! Укажите PUBLIC_URL=https://api.localee.ru и перезапустите сервис.\n',
+    );
+  }
 });

@@ -197,9 +197,12 @@ export interface ReplyPreview {
 // только одиночное поле image, он заворачивает его во вложение сам.
 export interface Attachment {
   type: 'image' | 'file';
-  data: string; // data:...;base64,...
+  // Ссылка на файл в хранилище (https://…/uploads/…). У старых записей здесь
+  // ещё может быть data:...;base64,... — оба варианта показываются одинаково.
+  data: string;
   name?: string; // имя файла (у типа file)
   mime?: string; // MIME файла (у типа file)
+  size?: number; // размер в байтах (по ссылке его не посчитать)
 }
 
 export interface ChatMessageItem {

@@ -88,10 +88,19 @@ export async function addFiles(
   return { list, error };
 }
 
-// Читаемый размер файла для карточки вложения: «1,2 МБ».
-export function humanSize(dataUrl: string, locale: string): string {
-  const comma = dataUrl.indexOf(',');
-  const bytes = Math.round(((dataUrl.length - comma - 1) * 3) / 4);
+// Сколько весит вложение. У новых записей сервер присылает size (файл лежит на
+// диске, и по ссылке размер не посчитать). У старых в data ещё base64 — там
+// считаем по длине строки.
+export function attachmentBytes(a: Attachment): number {
+  if (typeof a.size === 'number' && a.size > 0) return a.size;
+  if (!a.data.startsWith('data:')) return 0;
+  const comma = a.data.indexOf(',');
+  return comma < 0 ? 0 : Math.round(((a.data.length - comma - 1) * 3) / 4);
+}
+
+// Читаемый размер для карточки вложения: «1,2 MB».
+export function humanSize(bytes: number, locale: string): string {
+  if (bytes <= 0) return '';
   if (bytes < 1024) return `${bytes} B`;
   const kb = bytes / 1024;
   if (kb < 1024) return `${kb.toFixed(0)} KB`;

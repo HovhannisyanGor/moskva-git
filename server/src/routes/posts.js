@@ -10,11 +10,10 @@ postsRouter.use(requireAuth); // вся лента доступна только
 
 const MAX_TEXT = 4000;
 const MAX_COMMENT = 2000;
-// Картинка поста: data URL небольшого размера (фронт сжимает до ~1080px).
-function validImage(s) {
-  if (!s) return true;
-  return /^data:image\/(png|jpe?g|webp|gif);base64,/.test(s) && s.length <= 3_000_000;
-}
+// Отдельной проверки картинки здесь больше нет: формат и размер проверяет
+// parseIncomingAttachments ДО сохранения файла, а в колонку image попадает уже
+// ссылка на сохранённый файл. Старая проверка искала «data:image…» и теперь
+// отклоняла бы любой пост с фото.
 
 // Краткие данные автора (имя, аватар, онлайн) — переиспользуем формат чатов.
 function author(uid) {
@@ -96,7 +95,6 @@ postsRouter.post('/', limitPost, (req, res) => {
   const image = firstImage(attachments); // первое фото — в старую колонку
   if (!text && attachments.length === 0) return res.status(400).json({ error: 'Пост пустой', code: 'post_empty' });
   if (text.length > MAX_TEXT) return res.status(400).json({ error: 'Текст слишком длинный', code: 'post_long' });
-  if (image && !validImage(image)) return res.status(400).json({ error: 'Картинка не подходит (формат или размер)', code: 'image_bad' });
   const info = db
     .prepare('INSERT INTO posts (user_id, text, image, attachments, created_at) VALUES (?, ?, ?, ?, ?)')
     .run(me, text, image, serializeAttachments(attachments), new Date().toISOString());
