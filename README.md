@@ -163,8 +163,6 @@ systemctl restart localee-api
 
 ## Создатели
 
-Делаем вдвоём — и сайт, и приложение, и бэкенд.
-
 <div align="center">
   <table>
     <tr>
@@ -186,7 +184,6 @@ systemctl restart localee-api
   </table>
 </div>
 
-Проект начат в июле 2026 года.
 
 ## Статус
 
